@@ -64,3 +64,45 @@ export async function fetchDiseases(q = '', limit = 20) {
 export function getExportUrl(format = 'csv', minScore = 40) {
   return `${API_BASE}/export?format=${format}&min_score=${minScore}`;
 }
+
+/**
+ * Fetch live external literature preprints from Europe PMC REST API
+ * Timeout handled gracefully via AbortController (5000ms limit).
+ */
+export async function fetchLiveEuropePMC(drugName, diseaseName) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 6000);
+
+  const query = `"${drugName}" AND "${diseaseName}"`;
+  const url = `https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=${encodeURIComponent(query)}&format=json&pageSize=5&sort=PUB_DATE%20desc`;
+
+  try {
+    const res = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeoutId);
+
+    if (!res.ok) {
+      throw new Error(`Europe PMC API error (${res.status})`);
+    }
+
+    const data = await res.json();
+    const results = data.resultList?.result || [];
+
+    return results.map(item => ({
+      id: item.id || item.pmid || item.doi,
+      pmid: item.pmid || null,
+      doi: item.doi || null,
+      title: item.title || 'Untitled Publication',
+      authors: item.authorString || 'Unknown Authors',
+      journal: item.journalTitle || item.bookTitle || 'Biomedical Journal',
+      pubYear: item.pubYear || item.firstPublicationDate?.substring(0, 4) || 'N/A',
+      abstractSnippet: item.abstractText ? item.abstractText.replace(/<[^>]+>/g, '').substring(0, 240) + '...' : null,
+      url: item.pmid ? `https://europepmc.org/article/MED/${item.pmid}` : item.doi ? `https://doi.org/${item.doi}` : `https://europepmc.org/search?query=${encodeURIComponent(query)}`,
+    }));
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err.name === 'AbortError') {
+      throw new Error('Europe PMC API request timed out after 6 seconds.');
+    }
+    throw err;
+  }
+}

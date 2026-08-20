@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ShieldAlert, Download, Layers, Activity, FileText, Calendar, CheckCircle, AlertTriangle, Zap, GitMerge, Info } from 'lucide-react';
-import { fetchSignalById, fetchSignalGraph, fetchSignalTrials, fetchSignalEvidence } from '../api';
+import { ArrowLeft, ShieldAlert, Download, Layers, Activity, FileText, Calendar, CheckCircle, AlertTriangle, Zap, GitMerge, Info, RefreshCw, ExternalLink, BookOpen } from 'lucide-react';
+import { fetchSignalById, fetchSignalGraph, fetchSignalTrials, fetchSignalEvidence, fetchLiveEuropePMC } from '../api';
+import { isSignalSaved, toggleSaveSignal } from '../utils/savedSignals';
 import ScoreBreakdown from '../components/ScoreBreakdown';
 import InteractiveGraph from '../components/InteractiveGraph';
 
@@ -16,9 +17,16 @@ export default function SignalDetails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Live Literature Enrichment state
+  const [liveLit, setLiveLit] = useState(null);
+  const [liveLoading, setLiveLoading] = useState(false);
+  const [liveError, setLiveError] = useState(null);
+
   useEffect(() => {
     setLoading(true);
     setError(null);
+    setLiveLit(null);
+    setLiveError(null);
 
     Promise.all([
       fetchSignalById(id),
@@ -39,6 +47,23 @@ export default function SignalDetails() {
         setLoading(false);
       });
   }, [id]);
+
+  const handleFetchLiveLit = () => {
+    if (!signal) return;
+    setLiveLoading(true);
+    setLiveError(null);
+
+    fetchLiveEuropePMC(signal.drug.name, signal.disease.name)
+      .then(results => {
+        setLiveLit(results);
+        setLiveLoading(false);
+      })
+      .catch(err => {
+        console.error('Live literature fetch failed:', err);
+        setLiveError(err.message || 'Live Europe PMC lookup unavailable.');
+        setLiveLoading(false);
+      });
+  };
 
   if (loading) {
     return (
@@ -118,7 +143,7 @@ export default function SignalDetails() {
                   transition: 'all 0.2s ease',
                 }}
               >
-                <Bookmark size={16} fill={saved ? 'var(--primary-cyan)' : 'none'} />
+                <FileText size={14} fill={saved ? 'var(--primary-cyan)' : 'none'} />
                 {saved ? 'SAVED TO PORTFOLIO' : 'SAVE HYPOTHESIS'}
               </button>
             </div>
@@ -160,7 +185,7 @@ export default function SignalDetails() {
         </div>
       </div>
 
-      {/* TASK 3: WHY PRISM DETECTED THIS & SCORE BREAKDOWN */}
+      {/* WHY PRISM DETECTED THIS & SCORE BREAKDOWN */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '32px' }}>
         {/* Score Breakdown Progress Bars */}
         <ScoreBreakdown components={scoreComps} />
@@ -189,7 +214,7 @@ export default function SignalDetails() {
 
       {/* TWO COLUMN SECTION: INFORMATION ARBITRAGE + INDEPENDENT SIGNAL COLLISION */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '32px' }}>
-        {/* TASK 4: INFORMATION ARBITRAGE */}
+        {/* INFORMATION ARBITRAGE */}
         <div className="arbitrage-card">
           <h3 style={{ fontSize: '1.2rem', marginBottom: '12px', color: 'var(--primary-cyan)', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Zap size={18} />
@@ -211,7 +236,7 @@ export default function SignalDetails() {
           </div>
         </div>
 
-        {/* TASK 5: INDEPENDENT SIGNAL COLLISION */}
+        {/* INDEPENDENT SIGNAL COLLISION */}
         <div className="glass-card" style={{ padding: '24px' }}>
           <h3 style={{ fontSize: '1.2rem', marginBottom: '8px', color: 'var(--accent-purple)', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <GitMerge size={18} />
@@ -288,6 +313,110 @@ export default function SignalDetails() {
         ) : (
           <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
             No clinical trials for this condition were identified in the current dataset snapshot.
+          </div>
+        )}
+      </div>
+
+      {/* LIVE LITERATURE ENRICHMENT (EUROPE PMC REST API) */}
+      <div className="glass-card" style={{ padding: '24px', marginBottom: '32px', border: '1px solid rgba(0, 242, 254, 0.25)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary-cyan)', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '4px' }}>
+              <BookOpen size={16} />
+              LIVE LITERATURE ENRICHMENT
+            </div>
+            <h3 style={{ fontSize: '1.2rem', color: 'var(--text-main)' }}>
+              Real-time Europe PMC Publication Preprints
+            </h3>
+          </div>
+
+          <button
+            onClick={handleFetchLiveLit}
+            disabled={liveLoading}
+            className="btn-primary"
+            style={{ fontSize: '0.85rem' }}
+          >
+            <RefreshCw size={14} className={liveLoading ? 'spin' : ''} />
+            {liveLoading ? 'Querying Europe PMC API...' : 'REFRESH LIVE LITERATURE'}
+          </button>
+        </div>
+
+        {/* Source Distinction Disclaimer Banner */}
+        <div style={{
+          background: 'rgba(255, 255, 255, 0.02)',
+          padding: '12px 16px',
+          borderRadius: '8px',
+          border: '1px solid var(--border-color)',
+          fontSize: '0.8rem',
+          color: 'var(--text-muted)',
+          marginBottom: '20px',
+          display: 'flex',
+          justify: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '12px',
+        }}>
+          <div>
+            <span style={{ color: 'var(--accent-emerald)', fontWeight: 700 }}>LOCAL DATASET EVIDENCE:</span> Verified snapshot from Open Targets 26.06 (medbase.db).
+          </div>
+          <div>
+            <span style={{ color: 'var(--primary-cyan)', fontWeight: 700 }}>LIVE EXTERNAL LITERATURE:</span> Real-time query to Europe PMC REST API. <em>(Does not alter candidate PRISM score)</em>.
+          </div>
+        </div>
+
+        {/* State Handler */}
+        {liveLoading ? (
+          <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
+            <RefreshCw size={24} className="spin" style={{ marginBottom: '8px' }} />
+            <div>Querying Europe PMC Public REST API for publications matching <strong>&ldquo;{drug.name}&rdquo; AND &ldquo;{disease.name}&rdquo;</strong>...</div>
+          </div>
+        ) : liveError ? (
+          <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '16px', borderRadius: '8px', color: '#f87171', fontSize: '0.85rem' }}>
+            <strong>Live Literature Lookup Failed:</strong> {liveError}
+            <div style={{ marginTop: '4px', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+              Note: Local database evidence and PRISM score remain 100% operational.
+            </div>
+          </div>
+        ) : liveLit ? (
+          liveLit.length === 0 ? (
+            <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+              No recent literature records returned by Europe PMC for &ldquo;{drug.name}&rdquo; AND &ldquo;{disease.name}&rdquo;.
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {liveLit.map((pub, idx) => (
+                <div key={idx} style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px', flexWrap: 'wrap', gap: '8px' }}>
+                    <a
+                      href={pub.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--primary-cyan)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      {pub.title}
+                      <ExternalLink size={14} />
+                    </a>
+                    <span className="badge badge-moderate" style={{ fontSize: '0.7rem' }}>
+                      {pub.pubYear} &bull; {pub.journal}
+                    </span>
+                  </div>
+
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
+                    Authors: {pub.authors} {pub.pmid && <span style={{ color: 'var(--text-dim)' }}>| PMID: {pub.pmid}</span>}
+                  </div>
+
+                  {pub.abstractSnippet && (
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-main)', lineHeight: 1.5, background: 'rgba(0, 0, 0, 0.2)', padding: '10px 12px', borderRadius: '6px' }}>
+                      {pub.abstractSnippet}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )
+        ) : (
+          <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+            Click <strong>REFRESH LIVE LITERATURE</strong> to query Europe PMC REST API for live 2026 preprints and publications.
           </div>
         )}
       </div>
