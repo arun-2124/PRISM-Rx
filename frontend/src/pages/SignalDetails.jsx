@@ -1,0 +1,206 @@
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft, ShieldAlert, Download, Layers, Activity, FileText, Calendar, CheckCircle, AlertTriangle } from 'lucide-react';
+import { fetchSignalById, fetchSignalGraph, fetchSignalTrials, fetchSignalEvidence } from '../api';
+import ScoreBreakdown from '../components/ScoreBreakdown';
+import InteractiveGraph from '../components/InteractiveGraph';
+
+export default function SignalDetails() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+
+  const [signal, setSignal] = useState(null);
+  const [graphData, setGraphData] = useState(null);
+  const [trialsData, setTrialsData] = useState(null);
+  const [evidenceData, setEvidenceData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+
+    Promise.all([
+      fetchSignalById(id),
+      fetchSignalGraph(id).catch(() => null),
+      fetchSignalTrials(id).catch(() => null),
+      fetchSignalEvidence(id).catch(() => null),
+    ])
+      .then(([sigRes, graphRes, trialsRes, evRes]) => {
+        setSignal(sigRes);
+        setGraphData(graphRes);
+        setTrialsData(trialsRes);
+        setEvidenceData(evRes);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('Signal details fetch error:', err);
+        setError(err.message);
+        setLoading(false);
+      });
+  }, [id]);
+
+  if (loading) {
+    return <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '60px 24px', color: 'var(--text-muted)' }}>Synthesizing Knowledge Graph Evidence...</div>;
+  }
+
+  if (error || !signal) {
+    return (
+      <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '60px 24px' }}>
+        <button className="btn-secondary" onClick={() => navigate('/signals')} style={{ marginBottom: '16px' }}>
+          <ArrowLeft size={16} /> Back to Explorer
+        </button>
+        <div className="glass-card" style={{ padding: '40px', color: 'var(--accent-rose)' }}>
+          Error loading signal details: {error || 'Candidate signal not found.'}
+        </div>
+      </div>
+    );
+  }
+
+  const drug = signal.drug;
+  const disease = signal.disease;
+  const score = signal.research_priority_score;
+  const category = signal.category;
+  const scoreComps = signal.score_components || {};
+
+  return (
+    <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '32px 24px' }}>
+      {/* Back Button */}
+      <button className="btn-secondary" onClick={() => navigate('/signals')} style={{ marginBottom: '24px' }}>
+        <ArrowLeft size={16} /> Back to Signal Explorer
+      </button>
+
+      {/* Main Signal Banner */}
+      <div className="glass-card" style={{ padding: '32px', marginBottom: '32px', borderLeft: '4px solid var(--primary-cyan)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '20px' }}>
+          <div>
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+              <span className={`badge ${category === 'STRONG_RESEARCH_SIGNAL' ? 'badge-strong' : category === 'MODERATE_RESEARCH_SIGNAL' ? 'badge-moderate' : 'badge-weak'}`}>
+                {category}
+              </span>
+            </div>
+
+            <h1 style={{ fontSize: '2.2rem', fontWeight: 800, marginBottom: '8px' }}>
+              {drug.name} <span style={{ color: 'var(--text-muted)' }}>&rarr;</span> {disease.name}
+            </h1>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>
+              Drug ID: <code>{drug.id}</code> | Disease ID: <code>{disease.id}</code>
+            </p>
+          </div>
+
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: '2.5rem', fontWeight: 800, fontFamily: 'var(--font-heading)', color: 'var(--primary-cyan)' }}>
+              {score}
+              <span style={{ fontSize: '1rem', color: 'var(--text-muted)' }}>/100</span>
+            </div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Research Priority Score</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Two Column Layout: Score Components + Dynamic Explanation */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '32px' }}>
+        {/* Score Components */}
+        <ScoreBreakdown components={scoreComps} />
+
+        {/* Dynamic Hypothesis Explanation */}
+        <div className="glass-card" style={{ padding: '24px' }}>
+          <h3 style={{ fontSize: '1.1rem', marginBottom: '16px', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <FileText size={18} color="var(--primary-cyan)" />
+            Hypothesis Explanation & Rationale
+          </h3>
+
+          <p style={{ fontSize: '0.95rem', lineHeight: 1.7, color: 'var(--text-main)', marginBottom: '16px', background: 'rgba(255, 255, 255, 0.02)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+            {signal.explanation}
+          </p>
+
+          <h4 style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '8px' }}>Primary Biological Target Paths:</h4>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {signal.supporting_paths?.map((p, idx) => (
+              <div key={idx} style={{ background: 'rgba(0, 242, 254, 0.05)', padding: '10px 14px', borderRadius: '6px', border: '1px solid rgba(0, 242, 254, 0.15)', fontSize: '0.85rem' }}>
+                <strong>{drug.name}</strong> &ndash;[{p.action_type || 'INHIBITOR'}]&rarr; <strong style={{ color: 'var(--accent-emerald)' }}>{p.target.symbol} ({p.target.name})</strong> &ndash;(score: {p.target_disease_score})&rarr; <strong>{disease.name}</strong>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Interactive 2-Hop Knowledge Neighborhood Graph */}
+      {graphData && (
+        <div style={{ marginBottom: '32px' }}>
+          <InteractiveGraph graphData={graphData} />
+        </div>
+      )}
+
+      {/* Clinical Trials Table View */}
+      <div className="glass-card" style={{ padding: '24px', marginBottom: '32px' }}>
+        <h3 style={{ fontSize: '1.1rem', marginBottom: '16px', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Calendar size={18} color="var(--accent-amber)" />
+          Clinical Trials Evidence ({trialsData?.trials_count || 0} studies found)
+        </h3>
+
+        {trialsData?.trials?.length ? (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border-color)', textAlign: 'left', color: 'var(--text-muted)' }}>
+                  <th style={{ padding: '10px' }}>Trial ID</th>
+                  <th style={{ padding: '10px' }}>Phase</th>
+                  <th style={{ padding: '10px' }}>Status</th>
+                  <th style={{ padding: '10px' }}>Study Purpose</th>
+                  <th style={{ padding: '10px' }}>Start Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {trialsData.trials.map((t, idx) => (
+                  <tr key={idx} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                    <td style={{ padding: '10px', color: 'var(--primary-cyan)', fontWeight: 600 }}>{t.trial_id}</td>
+                    <td style={{ padding: '10px' }}><span className="badge badge-moderate">{t.trial_phase || 'Phase N/A'}</span></td>
+                    <td style={{ padding: '10px', color: 'var(--text-main)' }}>{t.trial_status || 'Active'}</td>
+                    <td style={{ padding: '10px', color: 'var(--text-muted)' }}>{t.trial_primary_purpose || 'Therapeutic evaluation'}</td>
+                    <td style={{ padding: '10px', color: 'var(--text-dim)' }}>{t.trial_start_date || 'N/A'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+            No clinical trials for this condition were identified in the current dataset snapshot.
+          </div>
+        )}
+      </div>
+
+      {/* Safety Warnings Banner */}
+      <div className="glass-card" style={{ padding: '24px', marginBottom: '32px' }}>
+        <h3 style={{ fontSize: '1.1rem', marginBottom: '16px', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <ShieldAlert size={18} color="var(--accent-rose)" />
+          Safety Information Available in Current Dataset
+        </h3>
+
+        {evidenceData?.warnings?.length ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {evidenceData.warnings.map((w, idx) => (
+              <div key={idx} style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '12px', borderRadius: '8px', fontSize: '0.85rem' }}>
+                <div style={{ fontWeight: 700, color: '#f87171', marginBottom: '4px' }}>
+                  [{w.warning_type}] {w.toxicity_class || 'Black Box / Toxicity Warning'} ({w.country || 'Global'})
+                </div>
+                <div style={{ color: 'var(--text-muted)' }}>{w.description}</div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-emerald)', fontSize: '0.9rem' }}>
+            <CheckCircle size={18} />
+            No warning record found in the current dataset snapshot.
+          </div>
+        )}
+      </div>
+
+      {/* Scientific Limitations Disclaimer */}
+      <div style={{ background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.25)', padding: '16px', borderRadius: '12px', fontSize: '0.85rem', color: '#fbbf24' }}>
+        <strong>Research Limitation Disclaimer:</strong> This is a computational research hypothesis generated by PRISM-Rx from public biological datasets (Open Targets 26.06). It does NOT establish clinical efficacy, drug safety, or treatment suitability for patient care.
+      </div>
+    </div>
+  );
+}
