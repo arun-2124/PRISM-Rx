@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Dna, Layers, ShieldCheck, AlertTriangle, Bookmark, Check } from 'lucide-react';
+import { ArrowRight, Dna, Layers, ShieldCheck, AlertTriangle, Bookmark, Check, GitCompare } from 'lucide-react';
 import { isSignalSaved, toggleSaveSignal } from '../utils/savedSignals';
 
-export default function SignalCard({ signal }) {
+export default function SignalCard({ signal, isSelectedForCompare, onToggleCompare }) {
   const navigate = useNavigate();
 
   const drug = signal.drug;
@@ -57,9 +57,17 @@ export default function SignalCard({ signal }) {
   };
 
   return (
-    <div className="glass-card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', position: 'relative' }}>
+    <div className="glass-card" style={{
+      padding: '20px',
+      display: 'flex',
+      flexDirection: 'column',
+      justify: 'space-between',
+      position: 'relative',
+      border: isSelectedForCompare ? '1px solid var(--primary-cyan)' : '1px solid var(--border-color)',
+      boxShadow: isSelectedForCompare ? '0 0 15px rgba(0, 242, 254, 0.25)' : 'none',
+    }}>
       <div>
-        {/* Top Header: Badges & Score + Bookmark Button */}
+        {/* Top Header: Badges & Score + Bookmark + Compare Checkbox */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
             <span className={`badge ${getBadgeClass(category)}`}>
@@ -89,6 +97,31 @@ export default function SignalCard({ signal }) {
               <Bookmark size={14} fill={saved ? 'var(--primary-cyan)' : 'none'} />
               {saved ? 'Saved' : 'Save'}
             </button>
+
+            {/* Compare Checkbox Button */}
+            {onToggleCompare && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onToggleCompare(signal); }}
+                title="Select signal for side-by-side comparison"
+                style={{
+                  background: isSelectedForCompare ? 'rgba(157, 78, 221, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+                  border: isSelectedForCompare ? '1px solid var(--accent-purple)' : '1px solid var(--border-color)',
+                  borderRadius: '6px',
+                  padding: '4px 8px',
+                  cursor: 'pointer',
+                  color: isSelectedForCompare ? 'var(--accent-purple)' : 'var(--text-muted)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <GitCompare size={14} />
+                {isSelectedForCompare ? 'Compared' : 'Compare'}
+              </button>
+            )}
           </div>
 
           <div style={{ textAlign: 'right' }}>

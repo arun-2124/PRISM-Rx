@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Filter, Search, Sliders, Download, RefreshCw, Bookmark } from 'lucide-react';
+import { Filter, Search, Sliders, Download, RefreshCw, Bookmark, GitCompare, Trash2 } from 'lucide-react';
 import { fetchSignals, getExportUrl } from '../api';
 import { getSavedSignalIds, isSignalSaved } from '../utils/savedSignals';
 import SignalCard from '../components/SignalCard';
+import ComparisonDrawer from '../components/ComparisonDrawer';
 
 export default function Explorer() {
   const [signals, setSignals] = useState([]);
@@ -12,6 +13,10 @@ export default function Explorer() {
   // Active Tab: 'all' vs 'saved'
   const [activeTab, setActiveTab] = useState('all');
   const [savedIds, setSavedIds] = useState(getSavedSignalIds());
+
+  // Comparison State (up to 2 selected signals)
+  const [compareSignals, setCompareSignals] = useState([]);
+  const [showDrawer, setShowDrawer] = useState(false);
 
   // Filters
   const [drug, setDrug] = useState('');
@@ -66,13 +71,27 @@ export default function Explorer() {
     loadSignals();
   };
 
+  const handleToggleCompare = (signal) => {
+    const exists = compareSignals.some(s => s.signal_id === signal.signal_id);
+    if (exists) {
+      setCompareSignals(compareSignals.filter(s => s.signal_id !== signal.signal_id));
+    } else {
+      if (compareSignals.length >= 2) {
+        // Replace second signal if 2 already selected
+        setCompareSignals([compareSignals[0], signal]);
+      } else {
+        setCompareSignals([...compareSignals, signal]);
+      }
+    }
+  };
+
   // Filter signals if saved tab active
   const displayedSignals = activeTab === 'saved'
     ? signals.filter(s => savedIds.includes(s.signal_id))
     : signals.slice(offset, offset + limit);
 
   return (
-    <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '32px 24px' }}>
+    <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '32px 24px', position: 'relative' }}>
       {/* Header & Title */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
@@ -299,7 +318,12 @@ export default function Explorer() {
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
               {displayedSignals.map(sig => (
-                <SignalCard key={sig.signal_id} signal={sig} />
+                <SignalCard
+                  key={sig.signal_id}
+                  signal={sig}
+                  isSelectedForCompare={compareSignals.some(s => s.signal_id === sig.signal_id)}
+                  onToggleCompare={handleToggleCompare}
+                />
               ))}
             </div>
           )}
@@ -328,6 +352,56 @@ export default function Explorer() {
           )}
         </div>
       </div>
+
+      {/* Floating Bottom Comparison Action Bar */}
+      {compareSignals.length > 0 && (
+        <div style={{
+          position: 'fixed',
+          bottom: '24px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 900,
+          background: 'rgba(9, 13, 22, 0.95)',
+          backdropFilter: 'blur(16px)',
+          border: '1px solid var(--primary-cyan)',
+          borderRadius: '30px',
+          padding: '12px 24px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '16px',
+          boxShadow: '0 8px 32px rgba(0, 242, 254, 0.3)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', color: 'var(--text-main)', fontWeight: 600 }}>
+            <GitCompare size={18} color="var(--primary-cyan)" />
+            Selected for Comparison: <strong style={{ color: 'var(--primary-cyan)' }}>{compareSignals.length} / 2</strong>
+          </div>
+
+          <button
+            className="btn-primary"
+            disabled={compareSignals.length < 2}
+            onClick={() => setShowDrawer(true)}
+            style={{ opacity: compareSignals.length === 2 ? 1 : 0.6, cursor: compareSignals.length === 2 ? 'pointer' : 'not-allowed' }}
+          >
+            {compareSignals.length === 2 ? 'COMPARE SELECTED' : 'Select 1 More Signal'}
+          </button>
+
+          <button
+            onClick={() => setCompareSignals([])}
+            style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem' }}
+          >
+            <Trash2 size={14} /> Clear
+          </button>
+        </div>
+      )}
+
+      {/* Comparison Drawer Modal */}
+      {showDrawer && compareSignals.length === 2 && (
+        <ComparisonDrawer
+          signal1={compareSignals[0]}
+          signal2={compareSignals[1]}
+          onClose={() => setShowDrawer(false)}
+        />
+      )}
     </div>
   );
 }
