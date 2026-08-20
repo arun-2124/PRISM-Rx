@@ -53,6 +53,18 @@ export async function fetchSignalEvidence(id) {
   return res.json();
 }
 
+export async function fetchSignalTimeline(id) {
+  const res = await fetch(`${API_BASE}/signals/${encodeURIComponent(id)}/timeline`);
+  if (!res.ok) throw new Error('Failed to fetch signal timeline');
+  return res.json();
+}
+
+export async function fetchSignalWhyNow(id) {
+  const res = await fetch(`${API_BASE}/signals/${encodeURIComponent(id)}/why-now`);
+  if (!res.ok) throw new Error('Failed to fetch why-now intelligence');
+  return res.json();
+}
+
 export async function fetchDrugs(q = '', limit = 20) {
   const res = await fetch(`${API_BASE}/drugs?q=${encodeURIComponent(q)}&limit=${limit}`);
   if (!res.ok) throw new Error('Failed to search drugs');

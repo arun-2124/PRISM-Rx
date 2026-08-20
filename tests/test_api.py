@@ -92,6 +92,27 @@ class TestFastAPIBackend(unittest.TestCase):
         self.assertEqual(resp_csv.status_code, 200)
         self.assertEqual(resp_csv.headers["content-type"], "text/csv; charset=utf-8")
 
+    def test_signal_timeline_endpoint(self):
+        """Test GET /api/signals/{signal_id}/timeline endpoint."""
+        sig_id = "DR:CHEMBL403989__D:MONDO_0004967"
+        resp = self.client.get(f"/api/signals/{sig_id}/timeline")
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertEqual(data["signal_id"], sig_id)
+        self.assertIn("events", data)
+        self.assertIn("temporal_available", data)
+
+    def test_signal_why_now_endpoint(self):
+        """Test GET /api/signals/{signal_id}/why-now endpoint."""
+        sig_id = "DR:CHEMBL403989__D:MONDO_0004967"
+        resp = self.client.get(f"/api/signals/{sig_id}/why-now")
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertEqual(data["signal_id"], sig_id)
+        self.assertIn("drivers", data)
+        self.assertIn("explanation", data)
+        self.assertIn("temporal_acceleration", data)
+
 
 if __name__ == "__main__":
     unittest.main()

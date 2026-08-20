@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ShieldAlert, Download, Layers, Activity, FileText, Calendar, CheckCircle, AlertTriangle, Zap, GitMerge, Info, RefreshCw, ExternalLink, BookOpen } from 'lucide-react';
-import { fetchSignalById, fetchSignalGraph, fetchSignalTrials, fetchSignalEvidence, fetchLiveEuropePMC } from '../api';
+import { fetchSignalById, fetchSignalGraph, fetchSignalTrials, fetchSignalEvidence, fetchSignalTimeline, fetchSignalWhyNow, fetchLiveEuropePMC } from '../api';
 import { isSignalSaved, toggleSaveSignal } from '../utils/savedSignals';
 import ScoreBreakdown from '../components/ScoreBreakdown';
 import InteractiveGraph from '../components/InteractiveGraph';
+import EvidenceTimeline from '../components/EvidenceTimeline';
 
 export default function SignalDetails() {
   const { id } = useParams();
@@ -14,6 +15,8 @@ export default function SignalDetails() {
   const [graphData, setGraphData] = useState(null);
   const [trialsData, setTrialsData] = useState(null);
   const [evidenceData, setEvidenceData] = useState(null);
+  const [timelineData, setTimelineData] = useState(null);
+  const [whyNowData, setWhyNowData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -33,12 +36,16 @@ export default function SignalDetails() {
       fetchSignalGraph(id).catch(() => null),
       fetchSignalTrials(id).catch(() => null),
       fetchSignalEvidence(id).catch(() => null),
+      fetchSignalTimeline(id).catch(() => null),
+      fetchSignalWhyNow(id).catch(() => null),
     ])
-      .then(([sigRes, graphRes, trialsRes, evRes]) => {
+      .then(([sigRes, graphRes, trialsRes, evRes, timeRes, whyRes]) => {
         setSignal(sigRes);
         setGraphData(graphRes);
         setTrialsData(trialsRes);
         setEvidenceData(evRes);
+        setTimelineData(timeRes);
+        setWhyNowData(whyRes);
         setLoading(false);
       })
       .catch(err => {
@@ -277,6 +284,51 @@ export default function SignalDetails() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* WHY NOW? INTELLIGENCE CARD */}
+      <div className="glass-card" style={{ padding: '24px', marginBottom: '32px', border: '1px solid rgba(0, 242, 254, 0.3)', background: 'linear-gradient(135deg, rgba(0, 242, 254, 0.05) 0%, rgba(157, 78, 221, 0.05) 100%)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+          <div>
+            <span className="badge" style={{ background: 'rgba(0, 242, 254, 0.15)', color: 'var(--primary-cyan)', border: '1px solid rgba(0, 242, 254, 0.3)', marginBottom: '6px' }}>
+              REAL-TIME INTELLIGENCE
+            </span>
+            <h3 style={{ fontSize: '1.25rem', color: '#ffffff', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Zap size={20} color="var(--primary-cyan)" />
+              WHY NOW?
+            </h3>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <span className="badge" style={{ background: whyNowData?.temporal_acceleration === 'AVAILABLE' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.08)', color: whyNowData?.temporal_acceleration === 'AVAILABLE' ? '#10b981' : 'var(--text-muted)' }}>
+              TEMPORAL ACCELERATION: {whyNowData?.temporal_acceleration || 'UNAVAILABLE'}
+            </span>
+          </div>
+        </div>
+
+        <p style={{ fontSize: '0.92rem', color: '#ffffff', lineHeight: 1.5, marginBottom: '16px' }}>
+          {whyNowData?.explanation || `PRISM-Rx prioritized this candidate based on multi-source evidence convergence across Open Targets and ChEMBL data streams.`}
+        </p>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px', fontSize: '0.82rem' }}>
+          {whyNowData?.drivers?.map((dr, idx) => (
+            <div key={idx} style={{ background: 'rgba(0, 0, 0, 0.3)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '10px 12px', color: 'var(--text-main)', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+              <CheckCircle size={14} color="var(--primary-cyan)" style={{ marginTop: '2px', flexShrink: 0 }} />
+              <span>{dr}</span>
+            </div>
+          ))}
+        </div>
+
+        {whyNowData?.temporal_status_note && (
+          <div style={{ marginTop: '12px', fontSize: '0.75rem', color: 'var(--text-dim)', fontStyle: 'italic' }}>
+            Note: {whyNowData.temporal_status_note}
+          </div>
+        )}
+      </div>
+
+      {/* EVIDENCE TIMELINE */}
+      <div style={{ marginBottom: '32px' }}>
+        <EvidenceTimeline timelineData={timelineData} />
       </div>
 
       {/* Interactive 2-Hop Knowledge Neighborhood Graph */}
