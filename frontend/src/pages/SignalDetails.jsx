@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ShieldAlert, Download, Layers, Activity, FileText, Calendar, CheckCircle, AlertTriangle, Zap, GitMerge, Info, RefreshCw, ExternalLink, BookOpen } from 'lucide-react';
+import { ArrowLeft, ShieldAlert, Download, Layers, Activity, FileText, Calendar, CheckCircle, AlertTriangle, Zap, GitMerge, Info, RefreshCw, ExternalLink, BookOpen, X } from 'lucide-react';
 import { fetchSignalById, fetchSignalGraph, fetchSignalTrials, fetchSignalEvidence, fetchSignalTimeline, fetchSignalWhyNow, fetchLiveEuropePMC } from '../api';
 import { isSignalSaved, toggleSaveSignal } from '../utils/savedSignals';
 import ScoreBreakdown from '../components/ScoreBreakdown';
@@ -17,6 +17,7 @@ export default function SignalDetails() {
   const [evidenceData, setEvidenceData] = useState(null);
   const [timelineData, setTimelineData] = useState(null);
   const [whyNowData, setWhyNowData] = useState(null);
+  const [showStatusModal, setShowStatusModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -171,12 +172,37 @@ export default function SignalDetails() {
             </p>
           </div>
 
-          <div style={{ textAlign: 'right', background: 'rgba(0, 242, 254, 0.05)', padding: '16px 24px', borderRadius: '12px', border: '1px solid rgba(0, 242, 254, 0.2)' }}>
+          <div style={{ textAlign: 'right', background: 'rgba(0, 242, 254, 0.05)', padding: '16px 24px', borderRadius: '12px', border: '1px solid rgba(0, 242, 254, 0.2)', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
             <div style={{ fontSize: '2.5rem', fontWeight: 800, fontFamily: 'var(--font-heading)', color: 'var(--primary-cyan)' }}>
               {score}
               <span style={{ fontSize: '1rem', color: 'var(--text-muted)' }}>/100</span>
             </div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>PRISM Research Priority Score</div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>PRISM Research Priority Score</div>
+
+            {/* SIGNAL STATUS CLASSIFICATION BADGE */}
+            {signal.signal_status && (
+              <div
+                style={{
+                  marginTop: '8px',
+                  background: `${signal.signal_status.color}18`,
+                  border: `1px solid ${signal.signal_status.color}50`,
+                  borderRadius: '6px',
+                  padding: '4px 10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  cursor: 'pointer',
+                }}
+                onClick={() => setShowStatusModal(true)}
+                title="Click to view signal classification details"
+              >
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: signal.signal_status.color, boxShadow: `0 0 8px ${signal.signal_status.color}` }}></span>
+                <span style={{ color: signal.signal_status.color, fontWeight: 700, fontSize: '0.78rem', letterSpacing: '0.03em' }}>
+                  {signal.signal_status.label}
+                </span>
+                <Info size={12} color={signal.signal_status.color} />
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -291,7 +317,7 @@ export default function SignalDetails() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
           <div>
             <span className="badge" style={{ background: 'rgba(0, 242, 254, 0.15)', color: 'var(--primary-cyan)', border: '1px solid rgba(0, 242, 254, 0.3)', marginBottom: '6px' }}>
-              REAL-TIME INTELLIGENCE
+              EVIDENCE CONVERGENCE CONFIRMED
             </span>
             <h3 style={{ fontSize: '1.25rem', color: '#ffffff', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Zap size={20} color="var(--primary-cyan)" />
@@ -299,18 +325,21 @@ export default function SignalDetails() {
             </h3>
           </div>
 
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <span className="badge" style={{ background: whyNowData?.temporal_acceleration === 'AVAILABLE' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.08)', color: whyNowData?.temporal_acceleration === 'AVAILABLE' ? '#10b981' : 'var(--text-muted)' }}>
-              TEMPORAL ACCELERATION: {whyNowData?.temporal_acceleration || 'UNAVAILABLE'}
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <span className="badge" style={{ background: whyNowData?.temporal_evidence === 'AVAILABLE' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.08)', color: whyNowData?.temporal_evidence === 'AVAILABLE' ? '#10b981' : 'var(--text-muted)', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+              DATED EVIDENCE: {whyNowData?.temporal_evidence || 'UNAVAILABLE'}
+            </span>
+            <span className="badge" style={{ background: 'rgba(255, 255, 255, 0.08)', color: 'var(--text-muted)', border: '1px solid var(--border-color)' }}>
+              ACCELERATION: {whyNowData?.temporal_acceleration || 'NOT_ESTABLISHED'}
             </span>
           </div>
         </div>
 
         <p style={{ fontSize: '0.92rem', color: '#ffffff', lineHeight: 1.5, marginBottom: '16px' }}>
-          {whyNowData?.explanation || `PRISM-Rx prioritized this candidate based on multi-source evidence convergence across Open Targets and ChEMBL data streams.`}
+          {whyNowData?.explanation || `PRISM-Rx identifies multi-source evidence convergence for this candidate. The current database contains dated evidence, but does not contain sufficient comparable time-series observations to establish evidence acceleration.`}
         </p>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px', fontSize: '0.82rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '10px', fontSize: '0.82rem', marginBottom: '14px' }}>
           {whyNowData?.drivers?.map((dr, idx) => (
             <div key={idx} style={{ background: 'rgba(0, 0, 0, 0.3)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '10px 12px', color: 'var(--text-main)', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
               <CheckCircle size={14} color="var(--primary-cyan)" style={{ marginTop: '2px', flexShrink: 0 }} />
@@ -320,8 +349,8 @@ export default function SignalDetails() {
         </div>
 
         {whyNowData?.temporal_status_note && (
-          <div style={{ marginTop: '12px', fontSize: '0.75rem', color: 'var(--text-dim)', fontStyle: 'italic' }}>
-            Note: {whyNowData.temporal_status_note}
+          <div style={{ padding: '10px 12px', background: 'rgba(0,0,0,0.25)', border: '1px solid var(--border-color)', borderRadius: '6px', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+            <strong style={{ color: 'var(--text-main)' }}>TEMPORAL INTELLIGENCE STATUS:</strong> {whyNowData.temporal_status_note}
           </div>
         )}
       </div>
@@ -506,6 +535,64 @@ export default function SignalDetails() {
           </div>
         )}
       </div>
+
+      {/* SIGNAL STATUS CLASSIFICATION EXPLANATION MODAL */}
+      {showStatusModal && signal?.signal_status && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div className="glass-card" style={{ maxWidth: '540px', width: '100%', padding: '24px', border: `1px solid ${signal.signal_status.color}` }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
+              <div>
+                <span className="badge" style={{ background: `${signal.signal_status.color}20`, color: signal.signal_status.color, border: `1px solid ${signal.signal_status.color}50`, marginBottom: '6px' }}>
+                  SIGNAL STATUS CLASSIFICATION
+                </span>
+                <h4 style={{ fontSize: '1.2rem', color: '#ffffff', margin: 0, fontWeight: 700 }}>
+                  {signal.signal_status.label}
+                </h4>
+              </div>
+              <button className="btn-secondary" style={{ padding: '4px 8px' }} onClick={() => setShowStatusModal(false)}>
+                <X size={16} />
+              </button>
+            </div>
+
+            <div style={{ background: 'rgba(0,0,0,0.3)', padding: '14px', borderRadius: '8px', fontSize: '0.85rem', marginBottom: '16px', border: '1px solid var(--border-color)' }}>
+              <div style={{ color: '#ffffff', fontWeight: 600, marginBottom: '6px' }}>Classification Reason:</div>
+              <p style={{ color: 'var(--text-main)', margin: 0, lineHeight: 1.5 }}>
+                {signal.signal_status.reason}
+              </p>
+            </div>
+
+            {/* Status Breakdown Table */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.82rem', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: '4px' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Established Indication in DB:</span>
+                <strong style={{ color: signal.signal_status.established_indication ? '#10b981' : '#f59e0b' }}>
+                  {signal.signal_status.established_indication ? 'YES (APPROVED)' : 'NO (UNINDICATED)'}
+                </strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: '4px' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Supporting Evidence Records:</span>
+                <strong style={{ color: '#ffffff' }}>{signal.evidence?.evidence_records_count || 0} records</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: '4px' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Independent Data Sources:</span>
+                <strong style={{ color: 'var(--primary-cyan)' }}>{signal.evidence?.source_diversity_count || 1} public sources</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: '4px' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Clinical Trial Reports:</span>
+                <strong style={{ color: 'var(--accent-amber)' }}>{signal.evidence?.clinical_trials_count || 0} studies</strong>
+              </div>
+            </div>
+
+            {/* Status Definition Legend */}
+            <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '6px', fontSize: '0.75rem', color: 'var(--text-dim)', border: '1px solid var(--border-color)' }}>
+              <div style={{ fontWeight: 700, color: 'var(--text-main)', marginBottom: '4px' }}>STATUS CLASSIFICATION DEFINITIONS:</div>
+              <div><strong style={{ color: '#10b981' }}>ESTABLISHED:</strong> Verified drug-disease indication exists in current dataset.</div>
+              <div><strong style={{ color: '#f59e0b' }}>EMERGING:</strong> Evidence supports the relationship, but it is not an established indication.</div>
+              <div><strong style={{ color: '#9d4edd' }}>HYPOTHESIS:</strong> Computational research hypothesis with limited supporting evidence.</div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

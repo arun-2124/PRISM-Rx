@@ -100,7 +100,8 @@ class TestFastAPIBackend(unittest.TestCase):
         data = resp.json()
         self.assertEqual(data["signal_id"], sig_id)
         self.assertIn("events", data)
-        self.assertIn("temporal_available", data)
+        self.assertEqual(data["temporal_evidence"], "AVAILABLE")
+        self.assertEqual(data["temporal_acceleration"], "NOT_ESTABLISHED")
 
     def test_signal_why_now_endpoint(self):
         """Test GET /api/signals/{signal_id}/why-now endpoint."""
@@ -111,7 +112,35 @@ class TestFastAPIBackend(unittest.TestCase):
         self.assertEqual(data["signal_id"], sig_id)
         self.assertIn("drivers", data)
         self.assertIn("explanation", data)
-        self.assertIn("temporal_acceleration", data)
+        self.assertEqual(data["temporal_acceleration"], "NOT_ESTABLISHED")
+
+    def test_signal_status_emerging_candidate(self):
+        """Test classification of unindicated candidate with evidence (EMERGING)."""
+        sig_id = "DR:CHEMBL403989__D:MONDO_0004967"
+        resp = self.client.get(f"/api/signals/{sig_id}")
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertIn("signal_status", data)
+        self.assertEqual(data["signal_status"]["status"], "EMERGING")
+        self.assertFalse(data["signal_status"]["established_indication"])
+
+    def test_signal_status_established_candidate(self):
+        """Test classification of established indication (ESTABLISHED)."""
+        sig_id = "DR:CHEMBL4__D:EFO_0000544" # Ofloxacin -> infection
+        resp = self.client.get(f"/api/signals/{sig_id}/status")
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertEqual(data["classification"]["status"], "ESTABLISHED")
+        self.assertTrue(data["classification"]["established_indication"])
+
+    def test_score_invariance_after_status_classification(self):
+        """Verify PRISM Priority Score remains exactly 82.0 for Tg100-801."""
+        sig_id = "DR:CHEMBL403989__D:MONDO_0004967"
+        resp = self.client.get(f"/api/signals/{sig_id}")
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertEqual(data["research_priority_score"], 82.0)
+        self.assertEqual(data["category"], "STRONG_RESEARCH_SIGNAL")
 
 
 if __name__ == "__main__":

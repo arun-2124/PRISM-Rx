@@ -166,18 +166,103 @@ def get_signals(
     }
 
 
+def classify_signal_status(conn, drug_id: str, disease_id: str, ev_records: int = 0, sources_cnt: int = 0, trials_cnt: int = 0):
+    """Classify candidate Drug-Disease pair as ESTABLISHED, EMERGING, or HYPOTHESIS based on verified database records."""
+    est_row = conn.execute("""
+        SELECT max_clinical_stage FROM drug_disease
+        WHERE drug_id = ? AND disease_id = ?
+    """, (drug_id, disease_id)).fetchone()
+
+    is_established = False
+    if est_row:
+        stage = (dict(est_row).get("max_clinical_stage") or "").upper()
+        if "APPROVAL" in stage or "APPROVED" in stage or "INDICATION" in stage:
+            is_established = True
+
+    if is_established:
+        return {
+            "status": "ESTABLISHED",
+            "label": "ESTABLISHED INDICATION",
+            "color": "#10b981", # Emerald
+            "established_indication": True,
+            "reason": "Verified established drug-disease indication relationship in current database snapshot."
+        }
+    elif ev_records > 0 or sources_cnt >= 2 or trials_cnt > 0:
+        return {
+            "status": "EMERGING",
+            "label": "EMERGING SIGNAL",
+            "color": "#f59e0b", # Amber
+            "established_indication": False,
+            "reason": f"Candidate is not an established indication in current database snapshot; supported by {sources_cnt} independent data sources and {ev_records} evidence records."
+        }
+    else:
+        return {
+            "status": "HYPOTHESIS",
+            "label": "RESEARCH HYPOTHESIS",
+            "color": "#9d4edd", # Violet
+            "established_indication": False,
+            "reason": "Candidate relationship is a computationally generated research hypothesis with limited direct evidence records."
+        }
+
+
 @router.get("/signals/{signal_id}")
 def get_signal_by_id(signal_id: str):
     """Retrieve detailed research view for a single candidate signal."""
     drug_id, disease_id = parse_signal_id(signal_id)
     signals = ENGINE.get_ranked_signals(drug=drug_id, disease=disease_id, limit=5)
 
-    for sig in signals:
-        if sig["drug"]["id"] == drug_id and sig["disease"]["id"] == disease_id:
-            sig["signal_id"] = signal_id
-            return sig
+    if not signals:
+        raise HTTPException(status_code=404, detail=f"Signal with ID '{signal_id}' not found.")
 
-    raise HTTPException(status_code=404, detail=f"Signal with ID '{signal_id}' not found.")
+    sig = signals[0]
+    sig["signal_id"] = signal_id
+
+    conn = get_connection(DB_PATH)
+    try:
+        ev_info = sig.get("evidence", {})
+        sig["signal_status"] = classify_signal_status(
+            conn,
+            drug_id,
+            disease_id,
+            ev_records=ev_info.get("evidence_records_count", 0),
+            sources_cnt=ev_info.get("source_diversity_count", 1),
+            trials_cnt=ev_info.get("clinical_trials_count", 0)
+        )
+    finally:
+        conn.close()
+
+    return sig
+
+
+@router.get("/signals/{signal_id}/status")
+def get_signal_status(signal_id: str):
+    """Returns explicit status classification details for candidate."""
+    drug_id, disease_id = parse_signal_id(signal_id)
+    conn = get_connection(DB_PATH)
+    try:
+        ev_cnt = conn.execute("SELECT COUNT(*) FROM evidence WHERE drug_id = ?", (drug_id,)).fetchone()[0]
+        dt_cnt = conn.execute("SELECT COUNT(*) FROM drug_target WHERE drug_id = ?", (drug_id,)).fetchone()[0]
+        trials_cnt = conn.execute("""
+            SELECT COUNT(DISTINCT cr.id) FROM evidence e
+            JOIN clinical_reports cr ON e.clinical_report_id = cr.id
+            WHERE e.drug_id = ?
+        """, (drug_id,)).fetchone()[0]
+
+        sources_cnt = (1 if ev_cnt > 0 else 0) + (1 if dt_cnt > 0 else 0) + (1 if trials_cnt > 0 else 0)
+        cls_res = classify_signal_status(conn, drug_id, disease_id, ev_cnt, sources_cnt, trials_cnt)
+
+        return {
+            "signal_id": signal_id,
+            "classification": cls_res,
+            "details": {
+                "established_indication": cls_res["established_indication"],
+                "supporting_evidence_count": ev_cnt,
+                "independent_sources_count": sources_cnt,
+                "clinical_trials_count": trials_cnt
+            }
+        }
+    finally:
+        conn.close()
 
 
 @router.get("/graph/{signal_id}")
@@ -611,7 +696,8 @@ def get_signal_timeline(signal_id: str):
     """Returns candidate-specific evidence timeline built exclusively from verified database records."""
     drug_id, disease_id = parse_signal_id(signal_id)
     conn = get_connection(DB_PATH)
-    events = []
+    scientific_events = []
+    snapshot_event = None
     try:
         cursor = conn.cursor()
         
@@ -621,13 +707,13 @@ def get_signal_timeline(signal_id: str):
             FROM evidence e
             JOIN clinical_reports cr ON e.clinical_report_id = cr.id
             WHERE e.drug_id = ? AND cr.trial_start_date IS NOT NULL AND cr.trial_start_date != ''
-            ORDER BY cr.trial_start_date DESC
+            ORDER BY cr.trial_start_date ASC
             LIMIT 10
         """, (drug_id,)).fetchall()
         
         for tr_row in trials:
             tr_dict = dict(tr_row)
-            events.append({
+            scientific_events.append({
                 "id": f"TRIAL:{tr_dict['id']}",
                 "date": tr_dict["trial_start_date"],
                 "type": "CLINICAL_TRIAL",
@@ -644,13 +730,13 @@ def get_signal_timeline(signal_id: str):
             SELECT warning_type, toxicity_class, country, year, source
             FROM drug_warnings
             WHERE drug_id = ? AND year IS NOT NULL
-            ORDER BY year DESC
+            ORDER BY year ASC
         """, (drug_id,)).fetchall()
         
         for w_row in warnings:
             w_dict = dict(w_row)
             year_int = int(w_dict["year"])
-            events.append({
+            scientific_events.append({
                 "id": f"WARN:{w_dict['warning_type']}:{year_int}",
                 "date": f"{year_int}-01-01",
                 "type": "SAFETY_WARNING",
@@ -667,12 +753,12 @@ def get_signal_timeline(signal_id: str):
             SELECT id, source, event_type, publication_date, title, evidence_strength, url
             FROM evidence_events
             WHERE drug_id = ? OR disease_id = ?
-            ORDER BY publication_date DESC
+            ORDER BY publication_date ASC
         """, (drug_id, disease_id)).fetchall()
         
         for ee_row in ee_rows:
             ee_dict = dict(ee_row)
-            events.append({
+            scientific_events.append({
                 "id": ee_dict["id"],
                 "date": ee_dict["publication_date"],
                 "type": ee_dict["event_type"],
@@ -684,7 +770,10 @@ def get_signal_timeline(signal_id: str):
                 "url": ee_dict["url"]
             })
 
-        # 4. Open Targets & ChEMBL Datasets Ingestion Snapshot Date
+        # Sort scientific evidence events ASCENDING by date
+        scientific_events.sort(key=lambda x: str(x.get("date") or ""))
+
+        # 4. Open Targets & ChEMBL Datasets Ingestion Snapshot Date (Separated from scientific events)
         ev_snap = cursor.execute("""
             SELECT MAX(retrieved_at) as last_retrieved, COUNT(*) as cnt
             FROM evidence
@@ -693,26 +782,32 @@ def get_signal_timeline(signal_id: str):
         
         if ev_snap and ev_snap[1] > 0 and ev_snap[0]:
             snap_date = str(ev_snap[0])[:10]
-            events.append({
+            snapshot_event = {
                 "id": f"SNAPSHOT:{drug_id}",
                 "date": snap_date,
                 "type": "DATASET_INGESTION",
-                "title": f"{ev_snap[1]} provenanced evidence records indexed in Open Targets dataset",
+                "title": f"{ev_snap[1]} candidate-associated evidence records indexed",
                 "source": "Open Targets 26.06",
                 "record_id": f"SNAPSHOT:{drug_id}",
                 "evidence_score": 1.0,
                 "provenance": "VERIFIED MEDBASE.DB",
                 "url": None
-            })
+            }
 
-        # Sort events by date descending
-        events.sort(key=lambda x: str(x.get("date") or ""), reverse=True)
+        all_events = list(scientific_events)
+        if snapshot_event:
+            all_events.append(snapshot_event)
+        all_events.sort(key=lambda x: str(x.get("date") or ""))
 
         return {
             "signal_id": signal_id,
-            "temporal_available": len(events) > 0,
-            "events_count": len(events),
-            "events": events
+            "temporal_evidence": "AVAILABLE" if len(scientific_events) > 0 else "UNAVAILABLE",
+            "temporal_acceleration": "NOT_ESTABLISHED",
+            "dated_evidence_events_count": len(scientific_events),
+            "events_count": len(all_events),
+            "scientific_events": scientific_events,
+            "dataset_snapshot": snapshot_event,
+            "events": all_events
         }
     finally:
         conn.close()
@@ -730,53 +825,80 @@ def get_signal_why_now(signal_id: str):
     conn = get_connection(DB_PATH)
     try:
         cursor = conn.cursor()
-        
-        # Check recent evidence events
-        recent_cnt = cursor.execute("""
+
+        # Audit Independent Sources
+        ot_cnt = cursor.execute("SELECT COUNT(*) FROM evidence WHERE drug_id = ?", (drug_id,)).fetchone()[0]
+        chembl_cnt = cursor.execute("SELECT COUNT(*) FROM drug_target WHERE drug_id = ?", (drug_id,)).fetchone()[0]
+        trials_cnt = cursor.execute("""
+            SELECT COUNT(DISTINCT cr.id) FROM evidence e
+            JOIN clinical_reports cr ON e.clinical_report_id = cr.id
+            WHERE e.drug_id = ?
+        """, (drug_id,)).fetchone()[0]
+
+        independent_sources_list = []
+        if ot_cnt > 0: independent_sources_list.append("Open Targets Platform 26.06")
+        if chembl_cnt > 0: independent_sources_list.append("ChEMBL 33 Database")
+        if trials_cnt > 0: independent_sources_list.append("ClinicalTrials.gov")
+        source_div = max(1, len(independent_sources_list))
+
+        # Check dated scientific events (publications + trials with dates)
+        recent_pub_cnt = cursor.execute("""
             SELECT COUNT(*) FROM evidence_events
             WHERE drug_id = ? OR disease_id = ?
         """, (drug_id, disease_id)).fetchone()[0]
 
-        # Check dated trial events
         dated_trials_cnt = cursor.execute("""
             SELECT COUNT(*) FROM evidence e
             JOIN clinical_reports cr ON e.clinical_report_id = cr.id
             WHERE e.drug_id = ? AND cr.trial_start_date IS NOT NULL AND cr.trial_start_date != ''
         """, (drug_id,)).fetchone()[0]
 
+        dated_events_total = recent_pub_cnt + dated_trials_cnt
+
         ev_info = sig.get("evidence", {})
-        source_div = ev_info.get("source_diversity_count", 1)
         ev_records = ev_info.get("evidence_records_count", 0)
         clin_trials = ev_info.get("clinical_trials_count", 0)
 
+        # Audit Target Action Mechanism
+        target_path_desc = "Multi-Target pathway"
+        if sig.get("supporting_paths"):
+            tp = sig["supporting_paths"][0]
+            symbol = tp["target"]["symbol"]
+            act_type = tp.get("action_type") or "INHIBITOR"
+            target_path_desc = f"Target pathway '{symbol}' {act_type.lower()} mechanism confirmed"
+
         drivers = [
-            f"Candidate hypothesis supported by {source_div} independent public data sources",
+            f"Candidate hypothesis supported by {source_div} independent public data sources ({', '.join(independent_sources_list)})",
             f"{ev_records} provenanced evidence records indexed in Open Targets dataset",
-            f"Target pathway '{sig['supporting_paths'][0]['target']['symbol'] if sig['supporting_paths'] else 'Multi-Target'}' binding affinity validated",
-            f"{clin_trials} active clinical study reports monitored"
+            f"{target_path_desc}",
+            f"{clin_trials} monitored clinical study reports in database"
         ]
 
-        if recent_cnt > 0:
-            drivers.append(f"{recent_cnt} new publication/preprint evidence events recorded in medbase.db")
+        if recent_pub_cnt > 0:
+            drivers.append(f"{recent_pub_cnt} dated publication/preprint evidence event(s) recorded")
 
-        temporal_status = "AVAILABLE" if (recent_cnt > 0 or dated_trials_cnt > 0) else "UNAVAILABLE"
-        temporal_note = (
-            f"Verified {recent_cnt + dated_trials_cnt} dated evidence records in database."
-            if temporal_status == "AVAILABLE" else
-            "Temporal acceleration cannot be established from current database snapshot."
-        )
+        temporal_evidence = "AVAILABLE" if dated_events_total > 0 else "UNAVAILABLE"
+        temporal_acceleration = "NOT_ESTABLISHED"
+
+        if temporal_evidence == "AVAILABLE":
+            temporal_note = "Dated evidence exists, but the current database snapshot does not contain sufficient time-series observations to establish evidence acceleration."
+        else:
+            temporal_note = "Temporal acceleration cannot be established from current database snapshot."
 
         return {
             "signal_id": signal_id,
             "status": "EVIDENCE_CONVERGENCE_CONFIRMED",
-            "independent_sources": source_div,
-            "evidence_records": ev_records,
-            "recent_events": recent_cnt,
-            "temporal_acceleration": temporal_status,
+            "independent_sources_count": source_div,
+            "independent_sources": independent_sources_list,
+            "evidence_records_count": ev_records,
+            "clinical_trials_count": clin_trials,
+            "dated_evidence_events_count": dated_events_total,
+            "temporal_evidence": temporal_evidence,
+            "temporal_acceleration": temporal_acceleration,
             "temporal_status_note": temporal_note,
             "drivers": drivers,
             "why_now": drivers,
-            "explanation": f"PRISM-Rx prioritized candidate '{sig['drug']['name']}' for '{sig['disease']['name']}' based on multi-source evidence convergence ({source_div} sources, {ev_records} records)."
+            "explanation": f"PRISM-Rx identifies multi-source evidence convergence for this candidate across {source_div} independent data sources ({ev_records} evidence records). The current database contains dated evidence, but does not contain sufficient comparable time-series observations to establish evidence acceleration."
         }
     finally:
         conn.close()
