@@ -8,12 +8,13 @@ import json
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Tuple
 
+from src.database.connection import get_db_connection, adapt_sql, get_backend_type
+
 DB_PATH = Path("data/unified/medbase.db")
 
 
-def get_connection(db_path: Path = DB_PATH) -> sqlite3.Connection:
-    conn = sqlite3.connect(str(db_path))
-    conn.row_factory = sqlite3.Row
+def get_connection(db_path: Path = DB_PATH):
+    backend, conn = get_db_connection()
     return conn
 
 

@@ -162,7 +162,8 @@ def migrate_data(dry_run: bool = False) -> bool:
             inserted_count = 0
 
             for row in cursor_sq:
-                batch.append(tuple(row))
+                clean_row = tuple(v.replace("\x00", "") if isinstance(v, str) else v for v in row)
+                batch.append(clean_row)
                 if len(batch) >= BATCH_SIZE:
                     cur_pg.executemany(insert_sql, batch)
                     inserted_count += len(batch)

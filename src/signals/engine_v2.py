@@ -42,9 +42,11 @@ CLINICAL_PHASE_WEIGHTS = {
 }
 
 
-def get_connection(db_path: Path = DB_PATH) -> sqlite3.Connection:
-    conn = sqlite3.connect(str(db_path))
-    conn.row_factory = sqlite3.Row
+from src.database.connection import get_db_connection, adapt_sql, get_backend_type
+
+
+def get_connection(db_path: Path = DB_PATH):
+    backend, conn = get_db_connection()
     return conn
 
 
@@ -56,8 +58,9 @@ class SignalEngineV2:
     def __init__(self, db_path: Optional[Path] = None):
         self.db_path = db_path or DB_PATH
 
-    def _get_conn(self) -> sqlite3.Connection:
-        return get_connection(self.db_path)
+    def _get_conn(self):
+        backend, conn = get_db_connection()
+        return conn
 
     def get_ranked_signals(
         self,
@@ -88,7 +91,7 @@ class SignalEngineV2:
             ]
             return filtered[:limit]
 
-        conn = get_connection(self.db_path)
+        backend, conn = get_db_connection()
         try:
             # 1. Fetch Candidate Paths & Collapse Duplicates by (drug_id, disease_id)
             query = """
@@ -119,7 +122,13 @@ class SignalEngineV2:
             query += " ORDER BY td.score DESC LIMIT ?"
             params.append(limit * 20)
 
-            rows = conn.execute(query, params).fetchall()
+            adapted_query = adapt_sql(query, backend)
+            if backend == "postgres":
+                cur = conn.cursor()
+                cur.execute(adapted_query, params)
+                rows = cur.fetchall()
+            else:
+                rows = conn.execute(adapted_query, params).fetchall()
 
             # Group rows into unique candidates
             candidates_map: Dict[str, Dict[str, Any]] = {}
@@ -179,33 +188,39 @@ class SignalEngineV2:
             ev_counts_by_drug: Dict[str, Tuple[int, int]] = {}
 
             if unique_drug_ids:
-                placeholders = ",".join("?" for _ in unique_drug_ids)
+                ph_sym = "%s" if backend == "postgres" else "?"
+                placeholders = ",".join(ph_sym for _ in unique_drug_ids)
+
+                cur = conn.cursor()
 
                 # Batch 1: Warnings
-                w_rows = conn.execute(
+                cur.execute(
                     f"SELECT drug_id, warning_type, toxicity_class, description FROM drug_warnings WHERE drug_id IN ({placeholders})",
                     unique_drug_ids
-                ).fetchall()
+                )
+                w_rows = cur.fetchall()
                 for w in w_rows:
                     warnings_by_drug.setdefault(w["drug_id"], []).append(dict(w))
 
                 # Batch 2: Clinical Reports
-                tr_rows = conn.execute(f"""
+                cur.execute(f"""
                     SELECT DISTINCT e.drug_id, cr.id, cr.source_name, cr.clinical_stage, cr.trial_phase, cr.trial_status, cr.url
                     FROM evidence e
                     JOIN clinical_reports cr ON e.clinical_report_id = cr.id
                     WHERE e.drug_id IN ({placeholders})
-                """, unique_drug_ids).fetchall()
+                """, unique_drug_ids)
+                tr_rows = cur.fetchall()
                 for tr in tr_rows:
                     trials_by_drug.setdefault(tr["drug_id"], []).append(dict(tr))
 
                 # Batch 3: Evidence counts
-                e_rows = conn.execute(f"""
+                cur.execute(f"""
                     SELECT drug_id, COUNT(*) as ev_cnt, COUNT(DISTINCT publication_ids) as lit_cnt
                     FROM evidence
                     WHERE drug_id IN ({placeholders})
                     GROUP BY drug_id
-                """, unique_drug_ids).fetchall()
+                """, unique_drug_ids)
+                e_rows = cur.fetchall()
                 for er in e_rows:
                     ev_counts_by_drug[er["drug_id"]] = (er["ev_cnt"] or 0, er["lit_cnt"] or 0)
 
