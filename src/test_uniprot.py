@@ -32,7 +32,7 @@ def test_api():
     
     print("\n1. Search for BRCA1 human proteins...")
     try:
-        results = search_proteins("BRCA1+AND+organism_id:9606", 3)
+        results = search_proteins("BRCA1 AND organism_id:9606", 3)
         print(f"  Got {len(results)} results")
         if results:
             p = results[0]
@@ -55,7 +55,7 @@ def test_api():
     
     print("\n3. Search for kinase inhibitors...")
     try:
-        results = search_proteins("kinase+AND+organism_id:9606", 3)
+        results = search_proteins("kinase AND organism_id:9606", 3)
         print(f"  Got {len(results)} results")
         for r in results:
             acc = r.get("primaryAccession", "?")
