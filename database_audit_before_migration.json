@@ -1,0 +1,24 @@
+{
+  "database_size_bytes": 571928576,
+  "database_size_mb": 545.43,
+  "table_count": 15,
+  "total_rows": 2002252,
+  "index_count": 29,
+  "tables": {
+    "alerts": 0,
+    "clinical_reports": 289955,
+    "diseases": 47080,
+    "drug_disease": 86468,
+    "drug_target": 14655,
+    "drug_warnings": 3039,
+    "drugs": 22407,
+    "entity_synonyms": 479742,
+    "evidence": 872619,
+    "evidence_events": 3,
+    "publications": 0,
+    "signal_evidence": 0,
+    "signal_history": 0,
+    "target_disease": 107593,
+    "targets": 78691
+  }
+}

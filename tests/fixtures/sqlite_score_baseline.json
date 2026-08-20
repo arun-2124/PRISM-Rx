@@ -1,0 +1,90 @@
+{
+  "DR:CHEMBL403989__D:MONDO_0004967": {
+    "signal_id": "DR:CHEMBL403989__D:MONDO_0004967",
+    "drug_name": "Tg100-801",
+    "disease_name": "acute lymphoblastic leukemia",
+    "prism_score": 82.0,
+    "category": "STRONG_RESEARCH_SIGNAL",
+    "status": "EMERGING",
+    "score_components": {
+      "target_disease_pts": 30.0,
+      "drug_target_pts": 13.5,
+      "clinical_pts": 9.0,
+      "literature_pts": 7.0,
+      "source_diversity_pts": 7.5,
+      "multi_target_bonus_pts": 10.0,
+      "novelty_pts": 5.0,
+      "safety_penalty": 0.0,
+      "contradiction_penalty": 0.0,
+      "action_conf_val": 0.9,
+      "highest_phase": "PHASE_2",
+      "evidence_tier": "MEDIUM"
+    }
+  },
+  "DR:CHEMBL473159__D:EFO_0005762": {
+    "signal_id": "DR:CHEMBL473159__D:EFO_0005762",
+    "drug_name": "Phloroglucinol",
+    "disease_name": "neuropathic pain",
+    "prism_score": 89.5,
+    "category": "STRONG_RESEARCH_SIGNAL",
+    "status": "EMERGING",
+    "score_components": {
+      "target_disease_pts": 30.0,
+      "drug_target_pts": 12.0,
+      "clinical_pts": 15.0,
+      "literature_pts": 10.0,
+      "source_diversity_pts": 7.5,
+      "multi_target_bonus_pts": 10.0,
+      "novelty_pts": 5.0,
+      "safety_penalty": 0.0,
+      "contradiction_penalty": 0.0,
+      "action_conf_val": 0.8,
+      "highest_phase": "APPROVAL",
+      "evidence_tier": "HIGH"
+    }
+  },
+  "DR:CHEMBL1059__D:EFO_0010282": {
+    "signal_id": "DR:CHEMBL1059__D:EFO_0010282",
+    "drug_name": "Pregabalin",
+    "disease_name": "gastrointestinal disease",
+    "prism_score": 88.0,
+    "category": "STRONG_RESEARCH_SIGNAL",
+    "status": "EMERGING",
+    "score_components": {
+      "target_disease_pts": 30.0,
+      "drug_target_pts": 10.5,
+      "clinical_pts": 15.0,
+      "literature_pts": 10.0,
+      "source_diversity_pts": 7.5,
+      "multi_target_bonus_pts": 10.0,
+      "novelty_pts": 5.0,
+      "safety_penalty": 0.0,
+      "contradiction_penalty": 0.0,
+      "action_conf_val": 0.7,
+      "highest_phase": "APPROVAL",
+      "evidence_tier": "HIGH"
+    }
+  },
+  "DR:CHEMBL1201__D:EFO_0003015": {
+    "signal_id": "DR:CHEMBL1201__D:EFO_0003015",
+    "drug_name": "Metformin",
+    "disease_name": "aggressive behavior",
+    "prism_score": 28.0,
+    "category": "CONTRADICTED",
+    "status": "EMERGING",
+    "score_components": {
+      "target_disease_pts": 30.0,
+      "drug_target_pts": 13.5,
+      "clinical_pts": 15.0,
+      "literature_pts": 7.0,
+      "source_diversity_pts": 7.5,
+      "multi_target_bonus_pts": 5.0,
+      "novelty_pts": 5.0,
+      "safety_penalty": 40.0,
+      "contradiction_penalty": 15.0,
+      "action_conf_val": 0.9,
+      "highest_phase": "APPROVAL",
+      "evidence_tier": "MEDIUM"
+    }
+  }
+}
