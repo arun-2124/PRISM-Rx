@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState, useMemo } from 'react';
-import { ZoomIn, ZoomOut, RotateCcw, Maximize2, Filter, Search, Plus, Eye, EyeOff } from 'lucide-react';
+import { ZoomIn, ZoomOut, RotateCcw, Maximize2, Filter, Search, Plus, Eye, EyeOff, Target, Compass, Sparkles } from 'lucide-react';
 import NodeInspector from './NodeInspector';
 
 export default function InteractiveGraph({ graphData, onExpandNeighborhood }) {
@@ -11,15 +11,15 @@ export default function InteractiveGraph({ graphData, onExpandNeighborhood }) {
   const [hoveredNode, setHoveredNode] = useState(null);
   const [hoveredEdge, setHoveredEdge] = useState(null);
 
-  // Viewport State
-  const [zoom, setZoom] = useState(1);
+  // Viewport & Mode State
+  const [zoom, setZoom] = useState(1.0);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [isDraggingCanvas, setIsDraggingCanvas] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [draggedNode, setDraggedNode] = useState(null);
 
-  // Controls & Filters
-  const [showEdgeLabels, setShowEdgeLabels] = useState(true);
+  const [showEdgeLabels, setShowEdgeLabels] = useState(false);
+  const [pathMode, setPathMode] = useState(false);
   const [nodeTypeFilters, setNodeTypeFilters] = useState({
     Drug: true,
     Target: true,
@@ -28,77 +28,11 @@ export default function InteractiveGraph({ graphData, onExpandNeighborhood }) {
   });
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Extract raw graph arrays
+  // Raw Graph Inputs
   const rawNodes = graphData?.nodes || [];
   const rawEdges = graphData?.edges || [];
 
-  // Filtered Graph
-  const nodes = useMemo(() => {
-    return rawNodes.filter(n => nodeTypeFilters[n.type] !== false);
-  }, [rawNodes, nodeTypeFilters]);
-
-  const activeNodeIds = useMemo(() => new Set(nodes.map(n => n.id)), [nodes]);
-
-  const edges = useMemo(() => {
-    return rawEdges.filter(e => activeNodeIds.has(e.source) && activeNodeIds.has(e.target));
-  }, [rawEdges, activeNodeIds]);
-
-  // Physics Simulation Node Positions & Velocities
-  const physicsRef = useRef({
-    positions: {},
-    velocities: {},
-    isSimulating: true,
-  });
-
-  // Seed Initial Layout Positions in 3 Columns
-  useEffect(() => {
-    if (!nodes.length) return;
-
-    const width = 800;
-    const height = 500;
-
-    const drugNodes = nodes.filter(n => n.type === 'Drug');
-    const targetNodes = nodes.filter(n => n.type === 'Target');
-    const diseaseNodes = nodes.filter(n => n.type === 'Disease');
-    const trialNodes = nodes.filter(n => n.type === 'ClinicalTrial');
-
-    const newPos = {};
-    const newVel = {};
-
-    // Left Column: Drug
-    drugNodes.forEach((n, i) => {
-      newPos[n.id] = { x: width * 0.15, y: height / 2 + (i - (drugNodes.length - 1) / 2) * 90 };
-      newVel[n.id] = { vx: 0, vy: 0 };
-    });
-
-    // Center Column: Targets
-    targetNodes.forEach((n, i) => {
-      newPos[n.id] = { x: width * 0.48, y: height * 0.2 + (i * 75) };
-      newVel[n.id] = { vx: 0, vy: 0 };
-    });
-
-    // Right Column: Diseases
-    diseaseNodes.forEach((n, i) => {
-      newPos[n.id] = { x: width * 0.82, y: height / 2 + (i - (diseaseNodes.length - 1) / 2) * 90 };
-      newVel[n.id] = { vx: 0, vy: 0 };
-    });
-
-    // Bottom Row: Clinical Trials
-    trialNodes.forEach((n, i) => {
-      newPos[n.id] = { x: width * 0.3 + (i * 120), y: height * 0.85 };
-      newVel[n.id] = { vx: 0, vy: 0 };
-    });
-
-    physicsRef.current.positions = newPos;
-    physicsRef.current.velocities = newVel;
-    physicsRef.current.isSimulating = true;
-
-    if (nodes.length > 0 && !selectedNode) {
-      setSelectedNode(nodes[0]);
-    }
-  }, [graphData, nodes]);
-
-  // Compute 1-Hop Connected Neighbor Sets for Selected/Hovered Node Highlighting
+  // Compute 1-Hop Connected Neighbor Sets
   const connectedInfo = useMemo(() => {
     const activeId = selectedNode?.id || hoveredNode?.id;
     if (!activeId) return { nodes: new Set(), edges: new Set() };
@@ -106,7 +40,7 @@ export default function InteractiveGraph({ graphData, onExpandNeighborhood }) {
     const connNodes = new Set([activeId]);
     const connEdges = new Set();
 
-    edges.forEach(e => {
+    rawEdges.forEach(e => {
       if (e.source === activeId || e.target === activeId) {
         connEdges.add(e.id);
         connNodes.add(e.source);
@@ -115,21 +49,119 @@ export default function InteractiveGraph({ graphData, onExpandNeighborhood }) {
     });
 
     return { nodes: connNodes, edges: connEdges };
-  }, [selectedNode, hoveredNode, edges]);
+  }, [selectedNode, hoveredNode, rawEdges]);
 
-  // Active Biological Path Trace String for Header Banner
-  const pathTrace = useMemo(() => {
-    if (!graphData?.center_node_id || !graphData?.target_disease_id) return null;
-    const centerDrug = nodes.find(n => n.id === graphData.center_node_id);
-    const targetDisease = nodes.find(n => n.id === graphData.target_disease_id);
-    const targets = nodes.filter(n => n.type === 'Target');
+  // Filtered Nodes & Edges (Supporting PATH MODE & Type Checkboxes)
+  const nodes = useMemo(() => {
+    return rawNodes.filter(n => {
+      if (nodeTypeFilters[n.type] === false) return false;
+      if (pathMode && selectedNode) {
+        return connectedInfo.nodes.has(n.id);
+      }
+      return true;
+    });
+  }, [rawNodes, nodeTypeFilters, pathMode, selectedNode, connectedInfo]);
+
+  const activeNodeIds = useMemo(() => new Set(nodes.map(n => n.id)), [nodes]);
+
+  const edges = useMemo(() => {
+    return rawEdges.filter(e => {
+      if (!activeNodeIds.has(e.source) || !activeNodeIds.has(e.target)) return false;
+      if (pathMode && selectedNode) {
+        return connectedInfo.edges.has(e.id);
+      }
+      return true;
+    });
+  }, [rawEdges, activeNodeIds, pathMode, selectedNode, connectedInfo]);
+
+  // Physics Simulation Reference
+  const physicsRef = useRef({
+    positions: {},
+    velocities: {},
+    isSimulating: true,
+  });
+
+  // Seed Structured Layered Layout Positions (Targets at Top, Drug in Center, Disease at Bottom)
+  useEffect(() => {
+    if (!rawNodes.length) return;
+
+    const width = 800;
+    const height = 500;
+
+    const drugNodes = rawNodes.filter(n => n.type === 'Drug');
+    const targetNodes = rawNodes.filter(n => n.type === 'Target');
+    const diseaseNodes = rawNodes.filter(n => n.type === 'Disease');
+    const trialNodes = rawNodes.filter(n => n.type === 'ClinicalTrial');
+
+    const newPos = {};
+    const newVel = {};
+
+    // 1. Top Layer: Targets (Horizontally spaced at y = 100)
+    const targetSpacing = Math.min(120, (width - 120) / Math.max(1, targetNodes.length));
+    const targetStartX = (width - (targetNodes.length - 1) * targetSpacing) / 2;
+
+    targetNodes.forEach((n, i) => {
+      newPos[n.id] = { x: targetStartX + i * targetSpacing, y: 100 };
+      newVel[n.id] = { vx: 0, vy: 0 };
+    });
+
+    // 2. Middle Layer: Drug (Centered at y = 250)
+    drugNodes.forEach((n, i) => {
+      newPos[n.id] = { x: width / 2 + (i - (drugNodes.length - 1) / 2) * 140, y: 250 };
+      newVel[n.id] = { vx: 0, vy: 0 };
+    });
+
+    // 3. Bottom Layer: Disease (Centered at y = 400)
+    diseaseNodes.forEach((n, i) => {
+      newPos[n.id] = { x: width / 2 + (i - (diseaseNodes.length - 1) / 2) * 160, y: 400 };
+      newVel[n.id] = { vx: 0, vy: 0 };
+    });
+
+    // 4. Side / Orbit Layer: Clinical Trials (y = 440)
+    const trialSpacing = Math.min(100, (width - 100) / Math.max(1, trialNodes.length));
+    const trialStartX = (width - (trialNodes.length - 1) * trialSpacing) / 2;
+
+    trialNodes.forEach((n, i) => {
+      newPos[n.id] = { x: trialStartX + i * trialSpacing, y: 445 };
+      newVel[n.id] = { vx: 0, vy: 0 };
+    });
+
+    physicsRef.current.positions = newPos;
+    physicsRef.current.velocities = newVel;
+    physicsRef.current.isSimulating = true;
+
+    if (rawNodes.length > 0 && !selectedNode) {
+      setSelectedNode(rawNodes[0]);
+    }
+  }, [graphData, rawNodes]);
+
+  // Selected Biological Path Trace
+  const currentInvestigationPath = useMemo(() => {
+    const centerDrug = rawNodes.find(n => n.type === 'Drug');
+    const targetDisease = rawNodes.find(n => n.type === 'Disease');
 
     if (!centerDrug || !targetDisease) return null;
-    const targetSymbols = targets.map(t => t.label).join(' / ') || 'Multi-Target';
-    return `${centerDrug.label} --[TARGETS]--> ${targetSymbols} --[ASSOCIATED_WITH]--> ${targetDisease.label}`;
-  }, [graphData, nodes]);
 
-  // Force Physics Simulation & Canvas Rendering Loop
+    if (selectedNode && selectedNode.type === 'Target') {
+      return `${centerDrug.label} ──[TARGETS]──> ${selectedNode.label} ──[ASSOCIATED_WITH]──> ${targetDisease.label}`;
+    }
+
+    const targetSymbols = rawNodes.filter(n => n.type === 'Target').map(t => t.label).join(' / ') || 'Multi-Target';
+    return `${centerDrug.label} ──[TARGETS]──> ${targetSymbols} ──[ASSOCIATED_WITH]──> ${targetDisease.label}`;
+  }, [rawNodes, selectedNode]);
+
+  // Connected Nodes List for Inspector Tab
+  const connectedNodesList = useMemo(() => {
+    if (!selectedNode) return [];
+    const connIds = new Set();
+    rawEdges.forEach(e => {
+      if (e.source === selectedNode.id) connIds.add(e.target);
+      if (e.target === selectedNode.id) connIds.add(e.source);
+    });
+    return rawNodes.filter(n => connIds.has(n.id));
+  }, [selectedNode, rawNodes, rawEdges]);
+
+  // Physics Simulation & Render Loop
   useEffect(() => {
     let animId;
     const canvas = canvasRef.current;
@@ -141,13 +173,11 @@ export default function InteractiveGraph({ graphData, onExpandNeighborhood }) {
       const width = canvas.width;
       const height = canvas.height;
       const pos = physicsRef.current.positions;
-      const vel = physicsRef.current.velocities;
 
-      // 1. Physics Step (Relaxation Damping)
+      // 1. Collision Prevention & Minimum Separation Physics
       if (physicsRef.current.isSimulating && nodes.length > 0) {
-        let maxMove = 0;
+        const minSep = 80; // Enforce minimum 80px visual separation between nodes
 
-        // Repulsion between nodes
         for (let i = 0; i < nodes.length; i++) {
           for (let j = i + 1; j < nodes.length; j++) {
             const n1 = nodes[i].id;
@@ -158,11 +188,10 @@ export default function InteractiveGraph({ graphData, onExpandNeighborhood }) {
 
             const dx = p2.x - p1.x;
             const dy = p2.y - p1.y;
-            const distSq = dx * dx + dy * dy + 0.1;
-            const dist = Math.sqrt(distSq);
+            const dist = Math.hypot(dx, dy) + 0.1;
 
-            if (dist < 180) {
-              const force = (180 - dist) / dist * 0.12;
+            if (dist < minSep) {
+              const force = (minSep - dist) / dist * 0.15;
               const fx = (dx / dist) * force;
               const fy = (dy / dist) * force;
 
@@ -178,36 +207,11 @@ export default function InteractiveGraph({ graphData, onExpandNeighborhood }) {
           }
         }
 
-        // Spring Attraction along Edges
-        edges.forEach(e => {
-          const p1 = pos[e.source];
-          const p2 = pos[e.target];
-          if (!p1 || !p2) return;
-
-          const dx = p2.x - p1.x;
-          const dy = p2.y - p1.y;
-          const dist = Math.hypot(dx, dy) + 0.1;
-          const targetDist = 140;
-
-          const force = (dist - targetDist) * 0.015;
-          const fx = (dx / dist) * force;
-          const fy = (dy / dist) * force;
-
-          if (e.source !== draggedNode?.id) {
-            p1.x += fx;
-            p1.y += fy;
-          }
-          if (e.target !== draggedNode?.id) {
-            p2.x -= fx;
-            p2.y -= fy;
-          }
-        });
-
         // Boundary Clamp
         nodes.forEach(n => {
           const p = pos[n.id];
           if (p && n.id !== draggedNode?.id) {
-            p.x = Math.max(50, Math.min(width - 50, p.x));
+            p.x = Math.max(60, Math.min(width - 60, p.x));
             p.y = Math.max(50, Math.min(height - 50, p.y));
           }
         });
@@ -217,7 +221,7 @@ export default function InteractiveGraph({ graphData, onExpandNeighborhood }) {
       ctx.clearRect(0, 0, width, height);
       ctx.save();
 
-      // Transform Canvas (Pan & Zoom)
+      // Transform Canvas
       ctx.translate(offset.x, offset.y);
       ctx.scale(zoom, zoom);
 
@@ -231,17 +235,17 @@ export default function InteractiveGraph({ graphData, onExpandNeighborhood }) {
 
         const isConnected = connectedInfo.edges.has(e.id);
         const isSelectedEdge = selectedEdge?.id === e.id;
-        const opacity = hasActiveSelection ? (isConnected || isSelectedEdge ? 1.0 : 0.15) : 0.6;
+        const opacity = hasActiveSelection ? (isConnected || isSelectedEdge ? 1.0 : 0.12) : 0.65;
 
         ctx.beginPath();
         ctx.moveTo(src.x, src.y);
         ctx.lineTo(dst.x, dst.y);
-        ctx.strokeStyle = isSelectedEdge ? '#00f2fe' : (e.color || 'rgba(255, 255, 255, 0.4)');
-        ctx.lineWidth = isSelectedEdge ? 3 : (isConnected ? 2.5 : 1.5);
+        ctx.strokeStyle = isSelectedEdge ? '#00f2fe' : (e.color || 'rgba(255, 255, 255, 0.35)');
+        ctx.lineWidth = isSelectedEdge ? 3.5 : (isConnected ? 2.5 : 1.5);
         ctx.globalAlpha = opacity;
         ctx.stroke();
 
-        // Draw Directional Arrow
+        // Directional Arrow Indicator
         const angle = Math.atan2(dst.y - src.y, dst.x - src.x);
         const arrowDist = (dst.size || 24) + 12;
         const arrowX = dst.x - Math.cos(angle) * arrowDist;
@@ -254,19 +258,18 @@ export default function InteractiveGraph({ graphData, onExpandNeighborhood }) {
         ctx.fillStyle = e.color || '#4facfe';
         ctx.fill();
 
-        // Draw Edge Label ONLY on hover, selection, or when showEdgeLabels toggle is ON and connected
-        if (showEdgeLabels && (isConnected || isSelectedEdge || hoveredEdge?.id === e.id)) {
+        // Edge Text Label (ONLY when hovered, selected, or showEdgeLabels toggle is explicitly ON)
+        if ((showEdgeLabels || isSelectedEdge || hoveredEdge?.id === e.id) && (isConnected || isSelectedEdge)) {
           const midX = (src.x + dst.x) / 2;
           const midY = (src.y + dst.y) / 2;
-          ctx.font = '500 10px Inter';
+          ctx.font = '600 10px Inter';
           ctx.fillStyle = '#ffffff';
           ctx.textAlign = 'center';
           ctx.globalAlpha = 0.95;
 
-          // Text Background Pill
           const textWidth = ctx.measureText(e.label).width;
-          ctx.fillStyle = 'rgba(5, 8, 17, 0.85)';
-          ctx.fillRect(midX - textWidth / 2 - 4, midY - 10, textWidth + 8, 14);
+          ctx.fillStyle = 'rgba(5, 8, 17, 0.9)';
+          ctx.fillRect(midX - textWidth / 2 - 5, midY - 10, textWidth + 10, 15);
 
           ctx.fillStyle = isSelectedEdge ? '#00f2fe' : '#ffffff';
           ctx.fillText(e.label, midX, midY);
@@ -281,34 +284,31 @@ export default function InteractiveGraph({ graphData, onExpandNeighborhood }) {
         const isSelected = selectedNode?.id === n.id;
         const isHovered = hoveredNode?.id === n.id;
         const isConnected = connectedInfo.nodes.has(n.id);
-        const r = n.size || 24;
+        const r = n.type === 'Drug' ? 36 : n.type === 'Disease' ? 34 : n.type === 'Target' ? 26 : 22;
 
-        const opacity = hasActiveSelection ? (isConnected || isSelected || isHovered ? 1.0 : 0.2) : 1.0;
+        const opacity = hasActiveSelection ? (isConnected || isSelected || isHovered ? 1.0 : 0.15) : 1.0;
         ctx.globalAlpha = opacity;
 
-        // Glowing Halo for Selected or Hovered Node
+        // Glowing Aura Halo
         if (isSelected || isHovered) {
           ctx.beginPath();
-          ctx.arc(p.x, p.y, r + 8, 0, 2 * Math.PI);
-          ctx.fillStyle = n.color ? `${n.color}33` : 'rgba(0, 242, 254, 0.25)';
+          ctx.arc(p.x, p.y, r + 9, 0, 2 * Math.PI);
+          ctx.fillStyle = n.color ? `${n.color}44` : 'rgba(0, 242, 254, 0.3)';
           ctx.fill();
         }
 
-        // Draw Node Shape by Type
+        // Draw Node Shape
         ctx.beginPath();
         if (n.type === 'Disease') {
-          // Rounded Rectangle for Disease
           const size = r * 1.8;
           ctx.roundRect(p.x - size / 2, p.y - size / 2, size, size, 8);
         } else if (n.type === 'ClinicalTrial') {
-          // Diamond Shape for Clinical Trial
           ctx.moveTo(p.x, p.y - r * 1.3);
           ctx.lineTo(p.x + r * 1.3, p.y);
           ctx.lineTo(p.x, p.y + r * 1.3);
           ctx.lineTo(p.x - r * 1.3, p.y);
           ctx.closePath();
         } else {
-          // Circle for Drug and Target
           ctx.arc(p.x, p.y, r, 0, 2 * Math.PI);
         }
 
@@ -318,16 +318,23 @@ export default function InteractiveGraph({ graphData, onExpandNeighborhood }) {
         ctx.lineWidth = isSelected ? 3.5 : 1.5;
         ctx.stroke();
 
-        // Node Label Text
-        ctx.font = isSelected ? '700 12px Outfit' : '600 11px Outfit';
-        ctx.fillStyle = opacity < 0.5 ? 'rgba(255, 255, 255, 0.4)' : '#ffffff';
-        ctx.textAlign = 'center';
-        ctx.fillText(n.label, p.x, p.y + r + 16);
+        // Node Label Text (Truncated long names)
+        const showLabel = !hasActiveSelection || isSelected || isConnected || isHovered;
+        if (showLabel) {
+          let labelText = n.label;
+          if (labelText.length > 18) {
+            labelText = labelText.substring(0, 16) + '...';
+          }
 
-        // Node Subtitle (Type)
-        ctx.font = '500 9px Inter';
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
-        ctx.fillText(n.type, p.x, p.y + r + 28);
+          ctx.font = isSelected ? '700 12px Outfit' : '600 11px Outfit';
+          ctx.fillStyle = opacity < 0.3 ? 'rgba(255, 255, 255, 0.2)' : '#ffffff';
+          ctx.textAlign = 'center';
+          ctx.fillText(labelText, p.x, p.y + r + 16);
+
+          ctx.font = '500 9px Inter';
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+          ctx.fillText(n.type, p.x, p.y + r + 28);
+        }
       });
 
       ctx.restore();
@@ -338,7 +345,7 @@ export default function InteractiveGraph({ graphData, onExpandNeighborhood }) {
     return () => cancelAnimationFrame(animId);
   }, [nodes, edges, zoom, offset, selectedNode, hoveredNode, selectedEdge, hoveredEdge, connectedInfo, showEdgeLabels, draggedNode]);
 
-  // Click & Mouse Handlers for Pan, Zoom, Drag & Selection
+  // Click & Mouse Handlers
   const getCanvasCoords = (e) => {
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
@@ -353,13 +360,12 @@ export default function InteractiveGraph({ graphData, onExpandNeighborhood }) {
     const coords = getCanvasCoords(e);
     const pos = physicsRef.current.positions;
 
-    // Check if clicked on a node
     let clickedN = null;
     nodes.forEach(n => {
       const p = pos[n.id];
       if (!p) return;
-      const dist = Math.hypot(coords.x - p.x, coords.y - p.y);
-      if (dist <= (n.size || 24)) {
+      const r = n.type === 'Drug' ? 36 : n.type === 'Disease' ? 34 : n.type === 'Target' ? 26 : 22;
+      if (Math.hypot(coords.x - p.x, coords.y - p.y) <= r) {
         clickedN = n;
       }
     });
@@ -369,14 +375,12 @@ export default function InteractiveGraph({ graphData, onExpandNeighborhood }) {
       setSelectedEdge(null);
       setDraggedNode(clickedN);
     } else {
-      // Check if clicked on an edge
       let clickedE = null;
       edges.forEach(eObj => {
         const p1 = pos[eObj.source];
         const p2 = pos[eObj.target];
         if (!p1 || !p2) return;
 
-        // Distance from point to line segment
         const A = coords.x - p1.x;
         const B = coords.y - p1.y;
         const C = p2.x - p1.x;
@@ -391,8 +395,7 @@ export default function InteractiveGraph({ graphData, onExpandNeighborhood }) {
         else if (param > 1) { xx = p2.x; yy = p2.y; }
         else { xx = p1.x + param * C; yy = p1.y + param * D; }
 
-        const dist = Math.hypot(coords.x - xx, coords.y - yy);
-        if (dist <= 8) {
+        if (Math.hypot(coords.x - xx, coords.y - yy) <= 8) {
           clickedE = eObj;
         }
       });
@@ -401,7 +404,6 @@ export default function InteractiveGraph({ graphData, onExpandNeighborhood }) {
         setSelectedEdge(clickedE);
         setSelectedNode(null);
       } else {
-        // Start Canvas Pan
         setIsDraggingCanvas(true);
         setDragStart({ x: e.clientX - offset.x, y: e.clientY - offset.y });
       }
@@ -427,13 +429,13 @@ export default function InteractiveGraph({ graphData, onExpandNeighborhood }) {
       return;
     }
 
-    // Hover Detection
     const coords = getCanvasCoords(e);
     const pos = physicsRef.current.positions;
     let hN = null;
     nodes.forEach(n => {
       const p = pos[n.id];
-      if (p && Math.hypot(coords.x - p.x, coords.y - p.y) <= (n.size || 24)) {
+      const r = n.type === 'Drug' ? 36 : n.type === 'Disease' ? 34 : n.type === 'Target' ? 26 : 22;
+      if (p && Math.hypot(coords.x - p.x, coords.y - p.y) <= r) {
         hN = n;
       }
     });
@@ -451,15 +453,43 @@ export default function InteractiveGraph({ graphData, onExpandNeighborhood }) {
     setZoom(z => Math.min(3.0, Math.max(0.3, z * zoomFactor)));
   };
 
-  // Node Search Filter Action
+  // Focus Viewport on Selected Node
+  const handleFocusSelectedNode = () => {
+    if (!selectedNode) return;
+    const p = physicsRef.current.positions[selectedNode.id];
+    if (p) {
+      setZoom(1.2);
+      setOffset({
+        x: 400 - p.x * 1.2,
+        y: 250 - p.y * 1.2,
+      });
+    }
+  };
+
+  // Search Action
   const handleSearchNode = (e) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
 
-    const found = nodes.find(n => n.label.toLowerCase().includes(searchQuery.toLowerCase()) || n.id.toLowerCase().includes(searchQuery.toLowerCase()));
+    const found = rawNodes.find(n => n.label.toLowerCase().includes(searchQuery.toLowerCase()) || n.id.toLowerCase().includes(searchQuery.toLowerCase()));
     if (found) {
       setSelectedNode(found);
       const p = physicsRef.current.positions[found.id];
+      if (p) {
+        setZoom(1.2);
+        setOffset({
+          x: 400 - p.x * 1.2,
+          y: 250 - p.y * 1.2,
+        });
+      }
+    }
+  };
+
+  const handleSelectNodeById = (nodeId) => {
+    const targetN = rawNodes.find(n => n.id === nodeId);
+    if (targetN) {
+      setSelectedNode(targetN);
+      const p = physicsRef.current.positions[targetN.id];
       if (p) {
         setOffset({
           x: 400 - p.x * zoom,
@@ -469,33 +499,27 @@ export default function InteractiveGraph({ graphData, onExpandNeighborhood }) {
     }
   };
 
-  // Fit Viewport
-  const handleFitViewport = () => {
-    setZoom(1.0);
-    setOffset({ x: 0, y: 0 });
-  };
-
   return (
     <div className="glass-card" style={{ padding: '20px', position: 'relative' }} ref={containerRef}>
       {/* Header Bar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px', marginBottom: '14px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px', marginBottom: '12px' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <h3 style={{ fontSize: '1.15rem', color: '#ffffff', fontWeight: 700, margin: 0 }}>
-              Interactive 2-Hop Biomedical Knowledge Graph
+              Biomedical Knowledge Graph
             </h3>
             <span className="badge" style={{ background: 'rgba(0, 242, 254, 0.15)', color: 'var(--primary-cyan)', border: '1px solid rgba(0,242,254,0.3)' }}>
               {nodes.length} Nodes · {edges.length} Edges
             </span>
           </div>
           <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px', margin: 0 }}>
-            Inspect real database target mechanisms, disease associations, and clinical study pathways.
+            Structured 2-hop investigation view backed by verified medbase.db relationships.
           </p>
         </div>
 
-        {/* Action Controls */}
+        {/* Header Action Controls */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-          {/* Node Search */}
+          {/* Search Node */}
           <form onSubmit={handleSearchNode} style={{ display: 'flex', alignItems: 'center', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '2px 8px' }}>
             <Search size={14} color="var(--text-dim)" style={{ marginRight: '4px' }} />
             <input
@@ -506,6 +530,27 @@ export default function InteractiveGraph({ graphData, onExpandNeighborhood }) {
               style={{ background: 'transparent', border: 'none', color: '#ffffff', fontSize: '0.8rem', outline: 'none', width: '110px' }}
             />
           </form>
+
+          {/* Path Mode Toggle */}
+          <button
+            className={`btn-secondary ${pathMode ? 'active' : ''}`}
+            style={{ padding: '6px 10px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+            onClick={() => setPathMode(v => !v)}
+            title="Toggle Path Mode to isolate selected path"
+          >
+            <Compass size={14} /> PATH MODE: {pathMode ? 'ON' : 'OFF'}
+          </button>
+
+          {/* Focus Button */}
+          <button
+            className="btn-secondary"
+            style={{ padding: '6px 10px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+            onClick={handleFocusSelectedNode}
+            disabled={!selectedNode}
+            title="Center view on selected node"
+          >
+            <Target size={14} /> FOCUS
+          </button>
 
           {/* Toggle Labels */}
           <button
@@ -528,16 +573,13 @@ export default function InteractiveGraph({ graphData, onExpandNeighborhood }) {
             </button>
           )}
 
-          {/* Zoom & Fit */}
+          {/* Zoom & Reset Controls */}
           <div style={{ display: 'flex', gap: '4px', background: 'rgba(0,0,0,0.3)', padding: '2px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
             <button className="btn-secondary" style={{ padding: '6px 8px' }} onClick={() => setZoom(z => Math.min(3, z + 0.2))} title="Zoom In">
               <ZoomIn size={14} />
             </button>
             <button className="btn-secondary" style={{ padding: '6px 8px' }} onClick={() => setZoom(z => Math.max(0.3, z - 0.2))} title="Zoom Out">
               <ZoomOut size={14} />
-            </button>
-            <button className="btn-secondary" style={{ padding: '6px 8px' }} onClick={handleFitViewport} title="Fit Viewport">
-              <Maximize2 size={14} />
             </button>
             <button className="btn-secondary" style={{ padding: '6px 8px' }} onClick={() => { setZoom(1); setOffset({ x: 0, y: 0 }); }} title="Reset Layout">
               <RotateCcw size={14} />
@@ -546,14 +588,19 @@ export default function InteractiveGraph({ graphData, onExpandNeighborhood }) {
         </div>
       </div>
 
-      {/* Path Trace Banner */}
-      {pathTrace && (
-        <div style={{ background: 'rgba(0, 242, 254, 0.08)', border: '1px solid rgba(0, 242, 254, 0.25)', borderRadius: '6px', padding: '8px 12px', marginBottom: '12px', fontSize: '0.8rem', color: 'var(--primary-cyan)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <strong style={{ color: '#ffffff' }}>Target Path:</strong> {pathTrace}
+      {/* CURRENT INVESTIGATION Banner Card */}
+      {currentInvestigationPath && (
+        <div style={{ background: 'rgba(0, 242, 254, 0.06)', border: '1px solid rgba(0, 242, 254, 0.25)', borderRadius: '8px', padding: '10px 14px', marginBottom: '12px', fontSize: '0.82rem' }}>
+          <div style={{ color: 'var(--text-dim)', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <Sparkles size={12} color="var(--primary-cyan)" /> CURRENT INVESTIGATION PATHWAY
+          </div>
+          <div style={{ color: 'var(--primary-cyan)', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>
+            {currentInvestigationPath}
+          </div>
         </div>
       )}
 
-      {/* Node Type Filter Checkboxes Bar & Legend */}
+      {/* Node Type Filter Checkboxes Bar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.2)', padding: '8px 12px', borderRadius: '6px', marginBottom: '12px', flexWrap: 'wrap', gap: '10px', border: '1px solid var(--border-color)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '0.78rem' }}>
           <span style={{ color: 'var(--text-dim)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -606,8 +653,8 @@ export default function InteractiveGraph({ graphData, onExpandNeighborhood }) {
         </div>
       </div>
 
-      {/* Main Graph Grid: Canvas + Inspector */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 300px', gap: '16px', minHeight: '480px' }}>
+      {/* Main Grid: Canvas + Inspector */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 310px', gap: '16px', minHeight: '500px' }}>
         {/* Canvas Render Area */}
         <div style={{ background: '#050811', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border-color)', position: 'relative' }}>
           <canvas
@@ -621,9 +668,8 @@ export default function InteractiveGraph({ graphData, onExpandNeighborhood }) {
             style={{ width: '100%', height: '500px', cursor: isDraggingCanvas ? 'grabbing' : 'grab' }}
           />
 
-          {/* Watermark Notice */}
           <div style={{ position: 'absolute', bottom: '10px', left: '12px', fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)', pointerEvents: 'none' }}>
-            PRISM-Rx Medbase.db Graph Topology · Drag nodes to adjust physics layout
+            PRISM-Rx Medbase.db Graph · Layered Physics Layout · Click node or edge to inspect
           </div>
         </div>
 
@@ -632,7 +678,9 @@ export default function InteractiveGraph({ graphData, onExpandNeighborhood }) {
           <NodeInspector
             selectedNode={selectedNode}
             selectedEdge={selectedEdge}
-            pathTrace={pathTrace}
+            pathTrace={currentInvestigationPath}
+            connectedNodesList={connectedNodesList}
+            onSelectNodeById={handleSelectNodeById}
           />
         </div>
       </div>
