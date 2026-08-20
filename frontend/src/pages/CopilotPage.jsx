@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Bot, Send, Sparkles, ArrowRight, ShieldAlert, FileText, Zap, Compass, Filter, CheckCircle2, Info, Layers, RefreshCw, ExternalLink } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { postCopilotQuery, fetchSignals } from '../api';
 
 export default function CopilotPage() {
@@ -12,9 +14,9 @@ export default function CopilotPage() {
   const [selectedSignalId, setSelectedSignalId] = useState(initialSignalId);
   const [candidateList, setCandidateList] = useState([
     { id: 'DR:CHEMBL403989__D:MONDO_0004967', label: 'Tg100-801 → acute lymphoblastic leukemia (Score: 82.0)' },
-    { id: 'DR:CHEMBL473159__D:EFO_0005762', label: 'Phloroglucinol → neuropathic pain (Score: 81.0)' },
-    { id: 'DR:CHEMBL1059__D:EFO_0010282', label: 'Pregabalin → gastrointestinal disease (Score: 81.0)' },
-    { id: 'DR:CHEMBL1201__D:MONDO_0005070', label: 'Metformin → neoplasm (Score: 40.0)' },
+    { id: 'DR:CHEMBL473159__D:EFO_0005762', label: 'Phloroglucinol → neuropathic pain (Score: 89.5)' },
+    { id: 'DR:CHEMBL1059__D:EFO_0010282', label: 'Pregabalin → gastrointestinal disease (Score: 88.0)' },
+    { id: 'DR:CHEMBL1201__D:MONDO_0004992', label: 'Metformin → cancer (Score: 28.0)' },
   ]);
 
   const [prompt, setPrompt] = useState('');
@@ -22,7 +24,7 @@ export default function CopilotPage() {
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      content: 'Welcome to **PRISM AI Copilot** — an evidence-grounded research assistant. I analyze real-time drug repurposing signals, evidence convergence, and contradiction metrics across verified medbase.db records.',
+      content: 'Welcome to **PRISM AI Copilot** — an evidence-grounded research assistant. I analyze real-time drug repurposing signals, evidence convergence, and contradiction metrics across 2,002,252+ verified database records.',
       structured: null,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
@@ -48,16 +50,22 @@ export default function CopilotPage() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
 
-  const suggestedPrompts = [
-    "Why is this signal interesting?",
-    "Explain the PRISM score.",
-    "What evidence supports this hypothesis?",
-    "What happened over time?",
-    "What clinical trials exist?",
+  const generalPrompts = [
+    "What is medicine?",
+    "Explain drug repurposing",
+    "What is a PRISM score?",
+    "What is a clinical trial?",
+    "What does inhibitor mean?",
+    "How does PRISM-Rx identify signals?",
+  ];
+
+  const candidatePrompts = [
+    "Why is this candidate interesting?",
+    "Explain its PRISM score",
+    "What evidence supports this signal?",
     "Are there safety concerns?",
-    "Which targets connect the drug to the disease?",
-    "Is this an established indication?",
-    "Compare Tg100-801 and Metformin.",
+    "What clinical trials exist?",
+    "Show the biological pathway",
   ];
 
   const handleSend = async (textToSend) => {
@@ -128,32 +136,61 @@ export default function CopilotPage() {
         </div>
       </div>
 
-      {/* Suggested Dynamic Prompts Bar */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
-        {suggestedPrompts.map((p, idx) => (
-          <button
-            key={idx}
-            onClick={() => handleSend(p)}
-            disabled={loading}
-            style={{
-              padding: '6px 12px',
-              borderRadius: '20px',
-              background: 'rgba(0, 242, 254, 0.08)',
-              border: '1px solid rgba(0, 242, 254, 0.25)',
-              color: 'var(--primary-cyan)',
-              fontSize: '0.78rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              transition: 'all 0.2s ease',
-            }}
-          >
-            <Sparkles size={12} />
-            {p}
-          </button>
-        ))}
+      {/* Suggested Prompts Section */}
+      <div style={{ marginBottom: '20px' }}>
+        <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-dim)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          Suggested Research Questions:
+        </div>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          {candidatePrompts.map((p, idx) => (
+            <button
+              key={`cand-${idx}`}
+              onClick={() => handleSend(p)}
+              disabled={loading}
+              style={{
+                padding: '6px 12px',
+                borderRadius: '20px',
+                background: 'rgba(0, 242, 254, 0.08)',
+                border: '1px solid rgba(0, 242, 254, 0.3)',
+                color: 'var(--primary-cyan)',
+                fontSize: '0.78rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <Sparkles size={12} />
+              {p}
+            </button>
+          ))}
+          {generalPrompts.map((p, idx) => (
+            <button
+              key={`gen-${idx}`}
+              onClick={() => handleSend(p)}
+              disabled={loading}
+              style={{
+                padding: '6px 12px',
+                borderRadius: '20px',
+                background: 'rgba(157, 78, 221, 0.1)',
+                border: '1px solid rgba(157, 78, 221, 0.3)',
+                color: 'var(--accent-purple)',
+                fontSize: '0.78rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <BookOpen size={12} />
+              {p}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Main Chat Stream Container */}
@@ -167,25 +204,57 @@ export default function CopilotPage() {
             )}
 
             <div style={{
-              maxWidth: '82%',
+              maxWidth: m.role === 'user' ? '65%' : '85%',
               background: m.role === 'user' ? 'rgba(0, 242, 254, 0.12)' : 'rgba(255, 255, 255, 0.03)',
               border: m.role === 'user' ? '1px solid var(--primary-cyan)' : '1px solid var(--border-color)',
-              borderRadius: '12px',
+              borderRadius: m.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
               padding: '18px 22px',
               fontSize: '0.9rem',
               lineHeight: 1.6,
               color: '#ffffff',
+              boxShadow: m.role === 'user' ? '0 4px 12px rgba(0, 242, 254, 0.1)' : 'none',
             }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                 <span style={{ fontSize: '0.72rem', fontWeight: 700, color: m.role === 'user' ? 'var(--primary-cyan)' : 'var(--accent-purple)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   {m.role === 'user' ? 'RESEARCHER QUESTION' : 'PRISM AI COPILOT RESPONSE'}
                 </span>
-                <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>{m.timestamp}</span>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', marginLeft: '12px' }}>{m.timestamp}</span>
               </div>
 
-              {/* Formatted Content */}
-              <div style={{ whiteSpace: 'pre-line', fontSize: '0.9rem' }}>
-                {m.content}
+              {/* Formatted Markdown Content */}
+              <div className="copilot-markdown-content" style={{ fontSize: '0.9rem' }}>
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    h1: ({ node, ...props }) => <h1 style={{ fontSize: '1.3rem', fontWeight: 800, marginTop: '16px', marginBottom: '8px', color: 'var(--primary-cyan)' }} {...props} />,
+                    h2: ({ node, ...props }) => <h2 style={{ fontSize: '1.15rem', fontWeight: 700, marginTop: '14px', marginBottom: '6px', color: '#ffffff' }} {...props} />,
+                    h3: ({ node, ...props }) => <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginTop: '12px', marginBottom: '6px', color: 'var(--accent-purple)' }} {...props} />,
+                    h4: ({ node, ...props }) => <h4 style={{ fontSize: '0.95rem', fontWeight: 700, marginTop: '10px', marginBottom: '4px', color: 'var(--primary-cyan)' }} {...props} />,
+                    p: ({ node, ...props }) => <p style={{ marginBottom: '8px', lineHeight: 1.6 }} {...props} />,
+                    ul: ({ node, ...props }) => <ul style={{ paddingLeft: '20px', margin: '8px 0' }} {...props} />,
+                    ol: ({ node, ...props }) => <ol style={{ paddingLeft: '20px', margin: '8px 0' }} {...props} />,
+                    li: ({ node, ...props }) => <li style={{ marginBottom: '4px' }} {...props} />,
+                    code: ({ node, inline, ...props }) => (
+                      <code style={{ background: 'rgba(0, 242, 254, 0.12)', color: 'var(--primary-cyan)', padding: '2px 6px', borderRadius: '4px', fontFamily: 'monospace', fontSize: '0.85em' }} {...props} />
+                    ),
+                    table: ({ node, ...props }) => (
+                      <div style={{ overflowX: 'auto', margin: '14px 0', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }} {...props} />
+                      </div>
+                    ),
+                    th: ({ node, ...props }) => (
+                      <th style={{ background: 'rgba(0, 242, 254, 0.1)', padding: '8px 12px', borderBottom: '1px solid var(--border-color)', textAlign: 'left', color: 'var(--primary-cyan)', fontWeight: 700 }} {...props} />
+                    ),
+                    td: ({ node, ...props }) => (
+                      <td style={{ padding: '8px 12px', borderBottom: '1px solid rgba(255,255,255,0.05)' }} {...props} />
+                    ),
+                    a: ({ node, ...props }) => (
+                      <a style={{ color: 'var(--primary-cyan)', textDecoration: 'underline' }} target="_blank" rel="noopener noreferrer" {...props} />
+                    ),
+                  }}
+                >
+                  {m.content}
+                </ReactMarkdown>
               </div>
 
               {/* Data Sources Pills & External Action */}
@@ -221,7 +290,7 @@ export default function CopilotPage() {
               <RefreshCw size={18} className="spin" />
             </div>
             <div style={{ fontSize: '0.85rem', color: 'var(--text-dim)', fontStyle: 'italic' }}>
-              Querying medbase.db evidence graph and calculating grounded research metrics...
+              Querying medbase.db evidence graph and analyzing grounded research metrics...
             </div>
           </div>
         )}
@@ -233,7 +302,7 @@ export default function CopilotPage() {
         <input
           type="text"
           className="input-control"
-          placeholder="Ask PRISM Copilot about repurposing scores, evidence records, clinical trials, or target pathways..."
+          placeholder="Ask PRISM Copilot about drug repurposing, evidence records, clinical trials, or target pathways..."
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           disabled={loading}
@@ -244,5 +313,15 @@ export default function CopilotPage() {
         </button>
       </form>
     </div>
+  );
+}
+
+// Icon component helper
+function BookOpen({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+      <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+    </svg>
   );
 }

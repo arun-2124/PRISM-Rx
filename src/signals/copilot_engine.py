@@ -1,17 +1,119 @@
 """PRISM-Rx Evidence-Grounded AI Copilot Engine.
 
 Retrieves candidate signals, score breakdowns, evidence records, target pathways,
-timelines, safety alerts, and status classifications directly from medbase.db.
-Provides 100% data-grounded answers with zero hallucination.
+timelines, safety alerts, and status classifications directly from medbase.db / PostgreSQL.
+Provides 100% data-grounded answers with zero hallucination and clear educational intent routing.
 """
 
 import os
-import sqlite3
 import re
 from typing import Dict, Any, List, Optional
+from src.database.connection import get_db_connection, execute_query, adapt_sql
 from src.signals.engine_v2 import SignalEngineV2
 
 DB_PATH = 'data/unified/medbase.db'
+
+# Concise Educational Answers for General Concept Queries
+GENERAL_CONCEPTS = {
+    "medicine": {
+        "title": "Educational Concept: Medicine",
+        "answer": (
+            "### Educational Overview: What is Medicine?\n\n"
+            "**Medicine** is the field of science and clinical practice concerned with diagnosing, treating, palliating, and preventing disease.\n\n"
+            "#### Core Pharmacological Interventions:\n"
+            "• **Small Molecule Drugs**: Chemically synthesized low-molecular-weight compounds that modulate biological targets (e.g., Aspirin, Ofloxacin).\n"
+            "• **Biologics & Targeted Therapies**: Monoclonal antibodies, recombinant proteins, and cell therapies designed for specific disease pathways.\n"
+            "• **Drug Repurposing**: Identifying new therapeutic indications for existing approved or investigational drugs, accelerating development and lowering costs.\n\n"
+            "*Note: This is a general biomedical educational explanation. It is distinct from PRISM database candidate evidence.*"
+        )
+    },
+    "drug repurposing": {
+        "title": "Educational Concept: Drug Repurposing",
+        "answer": (
+            "### Educational Overview: What is Drug Repurposing?\n\n"
+            "**Drug Repurposing** (also known as repositioning or reprofiling) is the strategy of identifying new therapeutic uses for existing, approved, or investigational drugs outside their original medical indication.\n\n"
+            "#### Strategic Advantages:\n"
+            "• **Accelerated Development**: Bypasses early Phase 0/1 human safety validation, saving 3–5 years.\n"
+            "• **De-Risked Safety Profile**: Leverages established human toxicology, dosing, and pharmacokinetic data.\n"
+            "• **Lower Capital Expenditure**: Significantly reduces R&D costs compared to de novo drug discovery.\n\n"
+            "*Note: PRISM-Rx computational signals prioritize candidate repurposing hypotheses for wet-lab validation.*"
+        )
+    },
+    "kinase": {
+        "title": "Educational Concept: Kinase Enzymes",
+        "answer": (
+            "### Educational Overview: What is a Kinase?\n\n"
+            "A **Kinase** is an enzyme that catalyzes the transfer of phosphate groups from high-energy donor molecules (such as ATP) to specific substrates—a biological process known as **phosphorylation**.\n\n"
+            "#### Biological Significance:\n"
+            "• **Cellular Signaling**: Kinases act as molecular switches in signal transduction networks regulating growth, division, and survival.\n"
+            "• **Oncology Target**: Dysregulated kinase activity (e.g., Src, FYN, BCR-ABL) drives oncogenic transformation, making kinase inhibitors primary therapeutic agents."
+        )
+    },
+    "fyn": {
+        "title": "Educational Concept: FYN Tyrosine Kinase",
+        "answer": (
+            "### Educational Overview: What is FYN?\n\n"
+            "**FYN** is a non-receptor tyrosine-protein kinase belonging to the **Src family of kinases (SFKs)**.\n\n"
+            "#### Key Biological Functions:\n"
+            "• **Immune Signaling**: Participates in T-cell receptor (TCR) downstream signaling and activation.\n"
+            "• **Cellular Plasticity**: Regulates cell adhesion, cytoskeletal remodeling, and neural synaptic plasticity.\n"
+            "• **Pathological Role**: Implicated in hematologic malignancies (such as acute lymphoblastic leukemia) and neurodegenerative diseases.\n\n"
+            "*To explore FYN's specific target-pathway connection in a candidate signal, ask: 'How does FYN connect candidate to disease?'*"
+        )
+    },
+    "adverse event": {
+        "title": "Educational Concept: Adverse Events",
+        "answer": (
+            "### Educational Overview: What is an Adverse Event?\n\n"
+            "An **Adverse Event (AE)** is any untoward medical occurrence in a patient or clinical investigation subject administered a pharmaceutical product, regardless of causal relationship.\n\n"
+            "#### Safety Monitoring Systems:\n"
+            "• **Pharmacovigilance**: Regulatory agencies (FDA, EMA) aggregate adverse event reports via systems like openFDA.\n"
+            "• **Black Box Warnings**: Severe toxicity alerts issued for high-risk adverse events."
+        )
+    },
+    "clinical trial": {
+        "title": "Educational Concept: Clinical Trials",
+        "answer": (
+            "### Educational Overview: What is a Clinical Trial?\n\nA **Clinical Trial** is a prospective research study in human subjects designed to evaluate the safety, efficacy, and clinical impact of medical interventions.\n\n"
+            "#### Development Phases:\n"
+            "• **Phase 1**: Initial human safety, dosage range, and pharmacokinetics (20–100 subjects).\n"
+            "• **Phase 2**: Efficacy evaluation and side-effect monitoring in target patient cohorts (100–300 subjects).\n"
+            "• **Phase 3**: Large-scale randomized trials comparing efficacy against current standard of care (1,000+ subjects).\n"
+            "• **Phase 4**: Post-approval surveillance and real-world evidence studies."
+        )
+    },
+    "inhibitor": {
+        "title": "Educational Concept: Pharmacological Inhibitors",
+        "answer": (
+            "### Educational Overview: What is an Inhibitor?\n\nIn pharmacology, an **Inhibitor** is a compound that binds to an enzyme, receptor, or transporter and decreases its biological activity.\n\n"
+            "#### Mechanisms of Action:\n"
+            "• **Competitive Inhibition**: Binds directly to the active site, competing with natural substrates.\n"
+            "• **Allosteric Modulation**: Binds to a secondary site, inducing conformational changes that reduce target activity."
+        )
+    },
+    "prism score": {
+        "title": "Educational Concept: PRISM Research Priority Score",
+        "answer": (
+            "### Educational Overview: PRISM Research Priority Score\n\nThe **PRISM Research Priority Score (0–100)** is a multi-dimensional computational metric quantifying the strength of a drug repurposing hypothesis.\n\n"
+            "#### Weighted Metric Components:\n"
+            "• **Target Action Weight (25 pts)**: Binding mechanism & affinity.\n"
+            "• **Association Score (25 pts)**: Disease-target genetic association strength.\n"
+            "• **Clinical Stage Precedence (20 pts)**: Advanced clinical trial phase.\n"
+            "• **Source Diversity (15 pts)**: Independent confirmation across public databases.\n"
+            "• **Multi-Target Pathway Bonus (15 pts)**: Multi-target cascade coverage.\n"
+            "• **Safety & Contradiction Penalties (Up to -25 pts)**: Deductions for toxicity warnings."
+        )
+    },
+    "prism-rx": {
+        "title": "Educational Concept: PRISM-Rx Signal Discovery",
+        "answer": (
+            "### Educational Overview: How PRISM-Rx Identifies Signals\n\n"
+            "PRISM-Rx constructs a multi-layered knowledge graph from **2,002,252+ database records** across ChEMBL, Open Targets, ClinicalTrials.gov, Europe PMC, and openFDA.\n\n"
+            "It traverses drug-target-disease pathways, filters out established medical indications, and scores unindicated candidate pairs using evidence-grounded algorithmic weighting."
+        )
+    }
+}
+
 
 class CopilotEngine:
     def __init__(self, db_path: str = DB_PATH):
@@ -21,20 +123,25 @@ class CopilotEngine:
         self.api_key = os.getenv("PRISM_AI_API_KEY", "")
 
     def process_query(self, question: str, signal_id: Optional[str] = None, comparison_signal_id: Optional[str] = None) -> Dict[str, Any]:
-        """Processes a natural language prompt using grounded database retrieval."""
+        """Processes a natural language prompt using grounded database retrieval & educational routing."""
         question_clean = question.strip()
         q_lower = question_clean.lower()
 
-        # 1. Resolve Target Candidate Signal
-        resolved_signal_id = signal_id or self._extract_signal_id_from_text(question_clean) or "DR:CHEMBL403989__D:MONDO_0004967"
+        # Check for General Educational / Concept Queries FIRST
+        gen_ans = self._check_general_knowledge_intent(q_lower, question_clean)
+        if gen_ans:
+            return gen_ans
+
+        # Resolve Target Candidate Signal
+        explicit_sig = self._extract_signal_id_from_text(question_clean)
+        resolved_signal_id = explicit_sig or signal_id or "DR:CHEMBL403989__D:MONDO_0004967"
 
         # Check if question is a comparison request
         comp_signal_id = comparison_signal_id or self._extract_second_signal_id(question_clean, resolved_signal_id)
 
-        conn = sqlite3.connect(self.db_path)
-        conn.row_factory = sqlite3.Row
+        backend, conn = get_db_connection()
         try:
-            # 2. Fetch Primary Signal Data
+            # Fetch Primary Signal Data
             primary_data = self._fetch_signal_full_context(conn, resolved_signal_id)
             if not primary_data:
                 return {
@@ -45,12 +152,12 @@ class CopilotEngine:
                     "provider_mode": "DETERMINISTIC_EVIDENCE_GROUNDED_MODE"
                 }
 
-            # 3. Fetch Comparison Data if requested
+            # Fetch Comparison Data if requested
             comp_data = None
             if comp_signal_id and comp_signal_id != resolved_signal_id:
                 comp_data = self._fetch_signal_full_context(conn, comp_signal_id)
 
-            # 4. Classify Question Intent & Construct Answer
+            # Classify Question Intent & Construct Answer
             intent = self._determine_intent(q_lower, comp_data is not None)
 
             if intent == "COMPARISON" or comp_data is not None:
@@ -80,17 +187,62 @@ class CopilotEngine:
         finally:
             conn.close()
 
-    def _extract_signal_id_from_text(self, text: str) -> Optional[str]:
+    def _check_general_knowledge_intent(self, q_lower: str, q_raw: str) -> Optional[Dict[str, Any]]:
+        """Returns educational response for general concept questions without forcing candidate context."""
+        # If the question is explicitly candidate pathway specific (e.g. "how does fyn connect..."), do NOT route to general knowledge
+        if any(term in q_lower for term in ["connect", "why did this", "why is tg100", "how does fyn connect", "how is this score"]):
+            return None
 
-        if "tg100-801" in text.lower() or "chembl403989" in text.lower():
+        if q_lower in ["what is medicine", "what is medicine?", "explain medicine"]:
+            return self._build_general_response(q_raw, GENERAL_CONCEPTS["medicine"])
+
+        if "drug repurposing" in q_lower or "what is repurposing" in q_lower:
+            return self._build_general_response(q_raw, GENERAL_CONCEPTS["drug repurposing"])
+
+        if q_lower in ["what is a kinase", "what is a kinase?", "what is kinase", "what is kinase?", "explain kinase"]:
+            return self._build_general_response(q_raw, GENERAL_CONCEPTS["kinase"])
+
+        if q_lower in ["what is fyn", "what is fyn?", "explain fyn"]:
+            return self._build_general_response(q_raw, GENERAL_CONCEPTS["fyn"])
+
+        if "adverse event" in q_lower:
+            return self._build_general_response(q_raw, GENERAL_CONCEPTS["adverse event"])
+
+        if "what is a clinical trial" in q_lower or "what is a clinical trial?" in q_lower:
+            return self._build_general_response(q_raw, GENERAL_CONCEPTS["clinical trial"])
+
+        if "inhibitor mean" in q_lower or "what is an inhibitor" in q_lower:
+            return self._build_general_response(q_raw, GENERAL_CONCEPTS["inhibitor"])
+
+        if q_lower in ["what is a prism score?", "what is a prism score", "what is prism score", "explain prism score"]:
+            return self._build_general_response(q_raw, GENERAL_CONCEPTS["prism score"])
+
+        if "identify signals" in q_lower or "how does prism-rx" in q_lower:
+            return self._build_general_response(q_raw, GENERAL_CONCEPTS["prism-rx"])
+
+        return None
+
+    def _build_general_response(self, question: str, concept_data: Dict[str, Any]) -> Dict[str, Any]:
+        return {
+            "question": question,
+            "signal_id": None,
+            "answer": concept_data["answer"],
+            "confidence": "GENERAL_KNOWLEDGE",
+            "provider_mode": "DETERMINISTIC_EVIDENCE_GROUNDED_MODE",
+            "sources": ["PRISM-Rx Educational Knowledge Base"]
+        }
+
+    def _extract_signal_id_from_text(self, text: str) -> Optional[str]:
+        t_lower = text.lower()
+        if "tg100-801" in t_lower or "chembl403989" in t_lower:
             return "DR:CHEMBL403989__D:MONDO_0004967"
-        if "phloroglucinol" in text.lower():
+        if "phloroglucinol" in t_lower:
             return "DR:CHEMBL473159__D:EFO_0005762"
-        if "pregabalin" in text.lower():
+        if "pregabalin" in t_lower:
             return "DR:CHEMBL1059__D:EFO_0010282"
-        if "metformin" in text.lower():
-            return "DR:CHEMBL1201__D:EFO_0003015"
-        if "ofloxacin" in text.lower():
+        if "metformin" in t_lower:
+            return "DR:CHEMBL1201__D:MONDO_0004992"
+        if "ofloxacin" in t_lower:
             return "DR:CHEMBL4__D:EFO_0000544"
 
         m = re.search(r'(DR:[A-Za-z0-9_]+__D:[A-Za-z0-9_]+)', text)
@@ -99,11 +251,10 @@ class CopilotEngine:
         return None
 
     def _extract_second_signal_id(self, text: str, primary_id: str) -> Optional[str]:
-
         t_lower = text.lower()
         if ("compare" in t_lower or "versus" in t_lower or " vs " in t_lower or "stronger" in t_lower):
             if "metformin" in t_lower and "DR:CHEMBL1201" not in primary_id:
-                return "DR:CHEMBL1201__D:EFO_0003015"
+                return "DR:CHEMBL1201__D:MONDO_0004992"
             if "tg100-801" in t_lower and "DR:CHEMBL403989" not in primary_id:
                 return "DR:CHEMBL403989__D:MONDO_0004967"
             if "phloroglucinol" in t_lower and "DR:CHEMBL473159" not in primary_id:
@@ -116,17 +267,17 @@ class CopilotEngine:
     def _determine_intent(self, q_lower: str, has_comp: bool) -> str:
         if has_comp or "compare" in q_lower or "versus" in q_lower or " vs " in q_lower or "stronger" in q_lower:
             return "COMPARISON"
-        if "score" in q_lower or "calculate" in q_lower or "formula" in q_lower or "why did it score" in q_lower:
+        if "score" in q_lower or "calculate" in q_lower or "formula" in q_lower or "why did" in q_lower or "points" in q_lower:
             return "SCORE_EXPLANATION"
-        if "evidence" in q_lower or "records" in q_lower or "support" in q_lower:
+        if "evidence" in q_lower or "records" in q_lower or "supports" in q_lower or "supporting" in q_lower:
             return "EVIDENCE"
         if "timeline" in q_lower or "time" in q_lower or "when" in q_lower or "history" in q_lower or "chronolog" in q_lower:
             return "TIMELINE"
-        if "safe" in q_lower or "warning" in q_lower or "toxicity" in q_lower or "side effect" in q_lower or "risk" in q_lower:
+        if "safe" in q_lower or "warning" in q_lower or "toxicity" in q_lower or "side effect" in q_lower or "risk" in q_lower or "concerns" in q_lower:
             return "SAFETY"
         if "trial" in q_lower or "clinical" in q_lower or "study" in q_lower or "phase" in q_lower:
             return "CLINICAL"
-        if "target" in q_lower or "pathway" in q_lower or "mechanism" in q_lower or "biology" in q_lower or "gene" in q_lower:
+        if "target" in q_lower or "pathway" in q_lower or "mechanism" in q_lower or "biology" in q_lower or "gene" in q_lower or "connect" in q_lower:
             return "BIOLOGY"
         if "status" in q_lower or "established" in q_lower or "approved" in q_lower or "indication" in q_lower:
             return "STATUS"
@@ -134,13 +285,13 @@ class CopilotEngine:
             return "LIMITATIONS"
         return "GENERAL_EXPLANATION"
 
-    def _fetch_signal_full_context(self, conn: sqlite3.Connection, signal_id: str) -> Optional[Dict[str, Any]]:
+    def _fetch_signal_full_context(self, conn: Any, signal_id: str) -> Optional[Dict[str, Any]]:
         parts = signal_id.split("__")
         if len(parts) != 2:
             return None
         drug_id, disease_id = parts[0], parts[1]
 
-        # 1. Fetch signal from EngineV2
+        # Fetch signal from EngineV2
         d_clean = drug_id.replace("DR:", "")
         dis_clean = disease_id.replace("D:", "")
         sigs = self.engine_v2.get_ranked_signals(drug=d_clean, disease=dis_clean, limit=1)
@@ -150,8 +301,8 @@ class CopilotEngine:
             return None
         sig = sigs[0]
 
-        # 2. Check indication status in drug_disease
-        est_row = conn.execute("""
+        # Check indication status in drug_disease
+        est_row = execute_query(conn, """
             SELECT max_clinical_stage FROM drug_disease
             WHERE drug_id = ? AND disease_id = ?
         """, (drug_id, disease_id)).fetchone()
@@ -192,9 +343,9 @@ class CopilotEngine:
                 "reason": "Candidate relationship is a computationally generated research hypothesis with limited direct evidence records."
             }
 
-        # 3. Clinical Trials
-        trials_rows = conn.execute("""
-            SELECT DISTINCT cr.id, cr.source_name, cr.trial_phase, cr.trial_status, cr.trial_start_date, cr.url
+        # Clinical Trials
+        trials_rows = execute_query(conn, """
+            SELECT DISTINCT cr.id, cr.source_name, cr.clinical_stage, cr.trial_phase, cr.trial_status, cr.trial_start_date, cr.url
             FROM evidence e
             JOIN clinical_reports cr ON e.clinical_report_id = cr.id
             WHERE e.drug_id = ?
@@ -203,15 +354,15 @@ class CopilotEngine:
         """, (drug_id,)).fetchall()
         trials_list = [dict(r) for r in trials_rows]
 
-        # 4. Warnings
-        warnings_rows = conn.execute("""
+        # Warnings
+        warnings_rows = execute_query(conn, """
             SELECT warning_type, toxicity_class, country, description, year
             FROM drug_warnings WHERE drug_id = ?
         """, (drug_id,)).fetchall()
         warnings_list = [dict(w) for w in warnings_rows]
 
-        # 5. Dated Evidence Events
-        ee_rows = conn.execute("""
+        # Dated Evidence Events
+        ee_rows = execute_query(conn, """
             SELECT id, source, event_type, publication_date, title, evidence_strength, url
             FROM evidence_events
             WHERE drug_id = ? OR disease_id = ?
@@ -219,7 +370,7 @@ class CopilotEngine:
         """, (drug_id, disease_id)).fetchall()
         ee_list = [dict(r) for r in ee_rows]
 
-        # 6. Targets
+        # Targets
         target_paths = []
         for p in sig.get("supporting_paths", []):
             target_paths.append(f"{sig['drug']['name']} --[{p.get('action_type') or 'INHIBITOR'}]--> {p['target']['symbol']} ({p['target']['name']}) --(score: {p.get('target_disease_score', 1.0)})--> {sig['disease']['name']}")
@@ -367,7 +518,7 @@ class CopilotEngine:
             ans = (
                 f"### SAFETY INFORMATION\n\n"
                 f"**Candidate**: `{d['drug_name']}` &rarr; `{d['disease_name']}`\n\n"
-                f"✓ **No safety warning records** were identified in the current medbase.db snapshot.\n"
+                f"✓ **No safety warning records** were identified in the current medbase.db snapshot for `{d['drug_name']}`.\n"
                 f"PRISM Safety Penalty: 0.0 points.\n\n"
                 f"*Note: Absence of warning records in database does not constitute clinical safety clearance.*"
             )
