@@ -383,7 +383,7 @@ def get_signal_graph(
     conn = get_connection(DB_PATH)
     try:
         # Clinical Trials for Drug
-        trials = conn.execute("""
+        trials = execute_query(conn, """
             SELECT DISTINCT cr.id, cr.source_name, cr.trial_phase, cr.trial_status, cr.url
             FROM evidence e
             JOIN clinical_reports cr ON e.clinical_report_id = cr.id
@@ -418,7 +418,7 @@ def get_signal_graph(
             )
 
         # Established Indications for Drug (Drug -> Disease)
-        indications = conn.execute("""
+        indications = execute_query(conn, """
             SELECT dis.id, dis.name, dd.max_clinical_stage
             FROM drug_disease dd
             JOIN diseases dis ON dd.disease_id = dis.id
@@ -447,7 +447,7 @@ def get_signal_graph(
 
         # If EXPANDED, fetch additional targets for the drug from DB
         if expanded or len(nodes_dict) < max_nodes:
-            add_targets = conn.execute("""
+            add_targets = execute_query(conn, """
                 SELECT t.id, t.approved_symbol, t.approved_name, t.target_class, dt.action_type, dt.mechanism_of_action
                 FROM drug_target dt
                 JOIN targets t ON dt.target_id = t.id
