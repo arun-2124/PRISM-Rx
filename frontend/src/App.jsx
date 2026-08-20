@@ -3,6 +3,7 @@ import { Routes, Route } from 'react-router-dom';
 
 // Layout Components
 import Sidebar from './components/Sidebar';
+import MobileNav from './components/MobileNav';
 import TopHeader from './components/TopHeader';
 import Footer from './components/Footer';
 import LandingModal from './components/LandingModal';
@@ -42,7 +43,7 @@ export default function App() {
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-dark)' }}>
-      {/* Persistent Left Sidebar Navigation */}
+      {/* Persistent Left Sidebar Navigation (Desktop) */}
       <Sidebar savedCount={savedCount} />
 
       {/* Main Content Viewport */}
@@ -73,6 +74,9 @@ export default function App() {
 
         {/* Global Footer */}
         <Footer />
+
+        {/* Mobile Bottom Quick Navigation Bar & Drawer */}
+        <MobileNav savedCount={savedCount} />
       </div>
 
       {/* Optional Landing Splash Modal */}

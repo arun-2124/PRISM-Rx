@@ -34,7 +34,7 @@ export default function Sidebar({ savedCount = 0 }) {
   ];
 
   return (
-    <aside style={{
+    <aside className="desktop-sidebar" style={{
       width: '260px',
       minWidth: '260px',
       background: '#090d16',
