@@ -154,7 +154,7 @@ class TestFastAPIBackend(unittest.TestCase):
         payload = {
             "question": "Compare Tg100-801 and Metformin.",
             "signal_id": "DR:CHEMBL403989__D:MONDO_0004967",
-            "comparison_signal_id": "DR:CHEMBL1201__D:MONDO_0005070"
+            "comparison_signal_id": "DR:CHEMBL1201__D:EFO_0003015"
         }
         resp = self.client.post("/api/copilot/query", json=payload)
         self.assertEqual(resp.status_code, 200)

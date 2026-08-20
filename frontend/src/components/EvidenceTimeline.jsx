@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Calendar, CheckCircle2, ShieldAlert, FileText, Database, ExternalLink, X, Info } from 'lucide-react';
+import { Calendar, CheckCircle2, ShieldAlert, FileText, Database, ExternalLink, X, Info, Layers } from 'lucide-react';
 
 export default function EvidenceTimeline({ timelineData }) {
   const [selectedEvent, setSelectedEvent] = useState(null);
 
-  const events = timelineData?.events || [];
-  const isAvailable = timelineData?.temporal_available && events.length > 0;
+  const scientificEvents = timelineData?.scientific_events || timelineData?.events?.filter(e => e.type !== 'DATASET_INGESTION') || [];
+  const datasetSnapshot = timelineData?.dataset_snapshot || timelineData?.events?.find(e => e.type === 'DATASET_INGESTION') || null;
+  const isAvailable = timelineData?.temporal_evidence === 'AVAILABLE' || scientificEvents.length > 0;
 
   const getTypeStyle = (type) => {
     switch (type) {
@@ -15,8 +16,6 @@ export default function EvidenceTimeline({ timelineData }) {
         return { badge: 'PREPRINT / PUB', bg: 'rgba(0, 242, 254, 0.15)', color: '#00f2fe', border: 'rgba(0, 242, 254, 0.4)' };
       case 'SAFETY_WARNING':
         return { badge: 'SAFETY ALERT', bg: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: 'rgba(239, 68, 68, 0.4)' };
-      case 'DATASET_INGESTION':
-        return { badge: 'DATASET INGESTION', bg: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: 'rgba(16, 185, 129, 0.4)' };
       default:
         return { badge: 'EVIDENCE EVENT', bg: 'rgba(157, 78, 221, 0.15)', color: '#9d4edd', border: 'rgba(157, 78, 221, 0.4)' };
     }
@@ -24,37 +23,43 @@ export default function EvidenceTimeline({ timelineData }) {
 
   return (
     <div className="glass-card" style={{ padding: '24px', position: 'relative' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px', flexWrap: 'wrap', gap: '10px' }}>
         <div>
           <h3 style={{ fontSize: '1.15rem', color: '#ffffff', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Calendar size={18} color="var(--primary-cyan)" />
             Candidate Evidence Timeline
           </h3>
           <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px', margin: 0 }}>
-            Chronological evidence progression backed exclusively by verified medbase.db records.
+            Chronological evidence progression (Ascending event order) backed exclusively by verified medbase.db records.
           </p>
         </div>
 
-        {isAvailable && (
-          <span className="badge" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
-            ✓ {events.length} DATED RECORDS VERIFIED
-          </span>
-        )}
+        <div style={{ display: 'flex', gap: '8px' }}>
+          {isAvailable ? (
+            <span className="badge" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+              ✓ {scientificEvents.length} DATED SCIENTIFIC EVENTS
+            </span>
+          ) : (
+            <span className="badge" style={{ background: 'rgba(255, 255, 255, 0.08)', color: 'var(--text-muted)' }}>
+              DATED EVIDENCE: UNAVAILABLE
+            </span>
+          )}
+        </div>
       </div>
 
       {!isAvailable ? (
-        <div style={{ background: 'rgba(0,0,0,0.25)', border: '1px dashed var(--border-color)', padding: '24px', borderRadius: '8px', textAlign: 'center' }}>
+        <div style={{ background: 'rgba(0,0,0,0.25)', border: '1px dashed var(--border-color)', padding: '24px', borderRadius: '8px', textAlign: 'center', marginBottom: '16px' }}>
           <Info size={28} color="var(--text-dim)" style={{ marginBottom: '8px', opacity: 0.7 }} />
           <div style={{ color: 'var(--text-main)', fontWeight: 600, fontSize: '0.95rem', marginBottom: '4px' }}>
             Temporal evidence unavailable in current snapshot.
           </div>
           <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', maxWidth: '500px', margin: '0 auto' }}>
-            The current database snapshot does not contain dated clinical study start dates or preprint records for this candidate.
+            The current database snapshot does not contain dated clinical study start dates or preprint publication records for this candidate.
           </div>
         </div>
       ) : (
-        <div style={{ position: 'relative', paddingLeft: '24px', borderLeft: '2px solid rgba(0, 242, 254, 0.25)', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {events.map((ev, idx) => {
+        <div style={{ position: 'relative', paddingLeft: '24px', borderLeft: '2px solid rgba(0, 242, 254, 0.25)', display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '20px' }}>
+          {scientificEvents.map((ev, idx) => {
             const style = getTypeStyle(ev.type);
             const displayDate = ev.date ? strToDate(ev.date) : 'Undated';
 
@@ -112,6 +117,26 @@ export default function EvidenceTimeline({ timelineData }) {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Separate Dataset Ingestion Snapshot Card */}
+      {datasetSnapshot && (
+        <div style={{ background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: '8px', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <Layers size={18} color="#10b981" />
+            <div>
+              <div style={{ color: '#ffffff', fontWeight: 600, fontSize: '0.85rem' }}>
+                DATASET SNAPSHOT STATUS ({datasetSnapshot.source})
+              </div>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>
+                {datasetSnapshot.title} · Indexed: <code style={{ color: '#10b981' }}>{datasetSnapshot.date}</code>
+              </div>
+            </div>
+          </div>
+          <span className="badge" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+            VERIFIED MEDBASE.DB SNAPSHOT
+          </span>
         </div>
       )}
 

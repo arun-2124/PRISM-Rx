@@ -89,7 +89,7 @@ class CopilotEngine:
         if "pregabalin" in text.lower():
             return "DR:CHEMBL1059__D:EFO_0010282"
         if "metformin" in text.lower():
-            return "DR:CHEMBL1201__D:MONDO_0005070"
+            return "DR:CHEMBL1201__D:EFO_0003015"
         if "ofloxacin" in text.lower():
             return "DR:CHEMBL4__D:EFO_0000544"
 
@@ -103,11 +103,14 @@ class CopilotEngine:
         t_lower = text.lower()
         if ("compare" in t_lower or "versus" in t_lower or " vs " in t_lower or "stronger" in t_lower):
             if "metformin" in t_lower and "DR:CHEMBL1201" not in primary_id:
-                return "DR:CHEMBL1201__D:MONDO_0005070"
+                return "DR:CHEMBL1201__D:EFO_0003015"
             if "tg100-801" in t_lower and "DR:CHEMBL403989" not in primary_id:
                 return "DR:CHEMBL403989__D:MONDO_0004967"
+            if "phloroglucinol" in t_lower and "DR:CHEMBL473159" not in primary_id:
+                return "DR:CHEMBL473159__D:EFO_0005762"
             if "pregabalin" in t_lower and "DR:CHEMBL1059" not in primary_id:
                 return "DR:CHEMBL1059__D:EFO_0010282"
+            return "DR:CHEMBL473159__D:EFO_0005762"
         return None
 
     def _determine_intent(self, q_lower: str, has_comp: bool) -> str:
@@ -451,7 +454,7 @@ class CopilotEngine:
             f"1. **Computational Prioritization**: PRISM-Rx score ({d['score']}/100) represents computational research priority, NOT clinical efficacy, safety clearance, or treatment suitability.\n"
             f"2. **Unindicated Relationship**: Candidate is an **{d['status']['label']}** and is NOT an established clinical treatment.\n"
             f"3. **Dataset Boundaries**: Analysis is grounded strictly in public datasets (Open Targets 26.06, ChEMBL 33, ClinicalTrials.gov) indexed in medbase.db.\n"
-            f"4. **Validation Required**: Target binding affinity and preclinical efficacy require wet-lab or clinical trial validation."
+            f"4. **Validation Required**: Target interaction mechanism and preclinical efficacy require wet-lab or clinical trial validation."
         )
         return {
             "question": q,
