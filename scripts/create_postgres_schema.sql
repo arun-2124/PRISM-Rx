@@ -1,56 +1,72 @@
 -- PRISM-Rx PostgreSQL / Supabase Schema DDL
--- Converted from SQLite data/unified/medbase.db
+-- Converted directly from SQLite data/unified/medbase.db
 
-CREATE TABLE IF NOT EXISTS drugs (
+DROP TABLE IF EXISTS alerts CASCADE;
+DROP TABLE IF EXISTS signal_history CASCADE;
+DROP TABLE IF EXISTS signal_evidence CASCADE;
+DROP TABLE IF EXISTS publications CASCADE;
+DROP TABLE IF EXISTS evidence_events CASCADE;
+DROP TABLE IF EXISTS drug_warnings CASCADE;
+DROP TABLE IF EXISTS evidence CASCADE;
+DROP TABLE IF EXISTS clinical_reports CASCADE;
+DROP TABLE IF EXISTS drug_disease CASCADE;
+DROP TABLE IF EXISTS target_disease CASCADE;
+DROP TABLE IF EXISTS drug_target CASCADE;
+DROP TABLE IF EXISTS entity_synonyms CASCADE;
+DROP TABLE IF EXISTS targets CASCADE;
+DROP TABLE IF EXISTS diseases CASCADE;
+DROP TABLE IF EXISTS drugs CASCADE;
+
+CREATE TABLE drugs (
     id VARCHAR(255) PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
     chembl_id VARCHAR(255),
-    drugbank_id VARCHAR(255),
-    pubchem_cid VARCHAR(255),
-    cas_number VARCHAR(255),
-    max_clinical_stage VARCHAR(100),
+    name TEXT NOT NULL,
     drug_type VARCHAR(100),
-    smiles TEXT,
-    description TEXT,
-    mechanism_of_action TEXT,
+    max_clinical_stage VARCHAR(100),
+    canonical_smiles TEXT,
+    inchi_key VARCHAR(255),
+    drugbank_ids TEXT,
+    trade_names TEXT,
+    parent_id VARCHAR(255),
+    synonyms TEXT,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS diseases (
+CREATE TABLE diseases (
     id VARCHAR(255) PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    mondo_id VARCHAR(255),
-    efo_id VARCHAR(255),
-    doid VARCHAR(255),
-    mesh_id VARCHAR(255),
-    category VARCHAR(100),
+    source_id VARCHAR(255),
+    name TEXT NOT NULL,
     description TEXT,
+    therapeutic_areas TEXT,
+    parent_ids TEXT,
+    exact_synonyms TEXT,
+    is_therapeutic_area INT DEFAULT 0,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS targets (
+CREATE TABLE targets (
     id VARCHAR(255) PRIMARY KEY,
     ensembl_id VARCHAR(255),
     approved_symbol VARCHAR(100) NOT NULL,
-    approved_name VARCHAR(255),
+    approved_name TEXT,
     biotype VARCHAR(100),
     uniprot_ids TEXT,
     hgnc_id VARCHAR(255),
     chembl_target_id VARCHAR(255),
-    target_class VARCHAR(100),
+    target_class TEXT,
     subcellular_locations TEXT,
     function_descriptions TEXT,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS entity_synonyms (
-    id VARCHAR(255) PRIMARY KEY,
-    entity_id VARCHAR(255) NOT NULL,
-    synonym VARCHAR(255) NOT NULL,
-    entity_type VARCHAR(100) NOT NULL
+CREATE TABLE entity_synonyms (
+    canonical_id VARCHAR(255) NOT NULL,
+    entity_type VARCHAR(100) NOT NULL,
+    synonym TEXT NOT NULL,
+    source VARCHAR(100)
 );
 
-CREATE TABLE IF NOT EXISTS drug_target (
+CREATE TABLE drug_target (
     drug_id VARCHAR(255) REFERENCES drugs(id) ON DELETE CASCADE,
     target_id VARCHAR(255) REFERENCES targets(id) ON DELETE CASCADE,
     action_type VARCHAR(100),
@@ -61,45 +77,45 @@ CREATE TABLE IF NOT EXISTS drug_target (
     PRIMARY KEY (drug_id, target_id)
 );
 
-CREATE TABLE IF NOT EXISTS target_disease (
+CREATE TABLE target_disease (
     target_id VARCHAR(255) REFERENCES targets(id) ON DELETE CASCADE,
     disease_id VARCHAR(255) REFERENCES diseases(id) ON DELETE CASCADE,
-    association_score DOUBLE PRECISION,
-    evidence_count INT DEFAULT 0,
+    score DOUBLE PRECISION,
     source VARCHAR(100),
     source_version VARCHAR(50),
+    retrieved_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (target_id, disease_id)
 );
 
-CREATE TABLE IF NOT EXISTS drug_disease (
+CREATE TABLE drug_disease (
     drug_id VARCHAR(255) REFERENCES drugs(id) ON DELETE CASCADE,
     disease_id VARCHAR(255) REFERENCES diseases(id) ON DELETE CASCADE,
     max_clinical_stage VARCHAR(100),
-    association_type VARCHAR(100),
     source VARCHAR(100),
     source_version VARCHAR(50),
+    retrieved_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (drug_id, disease_id)
 );
 
-CREATE TABLE IF NOT EXISTS clinical_reports (
+CREATE TABLE clinical_reports (
     id VARCHAR(255) PRIMARY KEY,
+    report_type VARCHAR(100),
     source_name VARCHAR(100),
+    clinical_stage VARCHAR(100),
     trial_phase VARCHAR(100),
     trial_status VARCHAR(100),
+    trial_study_type VARCHAR(100),
+    trial_primary_purpose VARCHAR(100),
+    trial_number_of_arms DOUBLE PRECISION,
     trial_start_date DATE,
     url TEXT,
-    title TEXT,
-    conditions TEXT,
-    interventions TEXT,
-    sponsor VARCHAR(255),
-    study_type VARCHAR(100),
-    enrollment INT,
-    completion_date DATE,
-    brief_summary TEXT,
-    detailed_description TEXT
+    has_expert_review INT DEFAULT 0,
+    source VARCHAR(100),
+    source_version VARCHAR(50),
+    retrieved_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS evidence (
+CREATE TABLE evidence (
     id VARCHAR(255) PRIMARY KEY,
     drug_id VARCHAR(255) REFERENCES drugs(id) ON DELETE CASCADE,
     target_id VARCHAR(255) REFERENCES targets(id) ON DELETE CASCADE,
@@ -116,74 +132,88 @@ CREATE TABLE IF NOT EXISTS evidence (
     retrieved_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS drug_warnings (
-    id VARCHAR(255) PRIMARY KEY,
+CREATE TABLE drug_warnings (
     drug_id VARCHAR(255) REFERENCES drugs(id) ON DELETE CASCADE,
     warning_type VARCHAR(100),
     toxicity_class VARCHAR(100),
     country VARCHAR(100),
     description TEXT,
-    year INT,
+    efo_id VARCHAR(255),
+    year DOUBLE PRECISION,
     source VARCHAR(100),
     source_version VARCHAR(50),
     retrieved_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS evidence_events (
+CREATE TABLE evidence_events (
     id VARCHAR(255) PRIMARY KEY,
+    source VARCHAR(100),
+    source_record_id VARCHAR(255),
+    event_type VARCHAR(100),
     drug_id VARCHAR(255) REFERENCES drugs(id) ON DELETE CASCADE,
     disease_id VARCHAR(255) REFERENCES diseases(id) ON DELETE CASCADE,
-    source VARCHAR(100),
-    event_type VARCHAR(100),
+    target_id VARCHAR(255) REFERENCES targets(id) ON DELETE CASCADE,
     publication_date DATE,
-    title TEXT,
+    detected_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     evidence_strength DOUBLE PRECISION,
+    source_reliability DOUBLE PRECISION,
+    content_hash VARCHAR(255),
+    title TEXT,
+    summary TEXT,
     url TEXT,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    metadata_json TEXT
 );
 
-CREATE TABLE IF NOT EXISTS publications (
+CREATE TABLE publications (
     id VARCHAR(255) PRIMARY KEY,
     pmid VARCHAR(100),
-    pmcid VARCHAR(100),
-    doi VARCHAR(255),
     title TEXT,
     authors TEXT,
-    journal VARCHAR(255),
-    publication_year INT
+    journal TEXT,
+    publication_date DATE,
+    source VARCHAR(100),
+    retrieved_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS alerts (
+CREATE TABLE alerts (
     id VARCHAR(255) PRIMARY KEY,
-    user_id VARCHAR(255),
-    signal_id VARCHAR(255),
-    alert_type VARCHAR(100),
-    title TEXT,
-    description TEXT,
-    status VARCHAR(50) DEFAULT 'UNREAD',
+    topic TEXT,
+    min_score DOUBLE PRECISION,
+    min_momentum DOUBLE PRECISION,
+    disease_id VARCHAR(255),
+    drug_id VARCHAR(255),
+    enabled INT DEFAULT 1,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS signal_evidence (
+CREATE TABLE signal_evidence (
     signal_id VARCHAR(255),
-    evidence_id VARCHAR(255) REFERENCES evidence(id) ON DELETE CASCADE,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (signal_id, evidence_id)
+    evidence_event_id VARCHAR(255) REFERENCES evidence_events(id) ON DELETE CASCADE,
+    relationship_type VARCHAR(100),
+    weight DOUBLE PRECISION
 );
 
-CREATE TABLE IF NOT EXISTS signal_history (
-    id VARCHAR(255) PRIMARY KEY,
-    signal_id VARCHAR(255),
+CREATE TABLE signal_history (
+    id BIGSERIAL PRIMARY KEY,
+    drug_id VARCHAR(255),
+    disease_id VARCHAR(255),
+    timestamp TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     prism_score DOUBLE PRECISION,
-    category VARCHAR(100),
-    calculated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    mechanistic_score DOUBLE PRECISION,
+    evidence_score DOUBLE PRECISION,
+    novelty_score DOUBLE PRECISION,
+    clinical_proximity_score DOUBLE PRECISION,
+    momentum_score DOUBLE PRECISION,
+    convergence_score DOUBLE PRECISION,
+    reliability_score DOUBLE PRECISION,
+    contradiction_penalty DOUBLE PRECISION
 );
 
 -- INDEXES
 CREATE INDEX IF NOT EXISTS idx_drugs_name ON drugs(name);
 CREATE INDEX IF NOT EXISTS idx_diseases_name ON diseases(name);
 CREATE INDEX IF NOT EXISTS idx_targets_symbol ON targets(approved_symbol);
-CREATE INDEX IF NOT EXISTS idx_entity_synonyms_entity ON entity_synonyms(entity_id);
+CREATE INDEX IF NOT EXISTS idx_entity_synonyms_canonical ON entity_synonyms(canonical_id);
 CREATE INDEX IF NOT EXISTS idx_drug_target_drug ON drug_target(drug_id);
 CREATE INDEX IF NOT EXISTS idx_target_disease_disease ON target_disease(disease_id);
 CREATE INDEX IF NOT EXISTS idx_drug_disease_drug ON drug_disease(drug_id);

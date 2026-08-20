@@ -55,7 +55,19 @@ EXPECTED_ROW_COUNTS = {
     "targets": 78691
 }
 
+def load_env_file():
+    env_path = ".env"
+    if os.path.exists(env_path):
+        with open(env_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    k, v = line.split("=", 1)
+                    k, v = k.strip(), v.strip().strip("'\"")
+                    os.environ[k] = v
+
 def migrate_data(dry_run: bool = False) -> bool:
+    load_env_file()
     print("=" * 80)
     print("PRISM-Rx SAFE SQLITE -> SUPABASE POSTGRESQL MIGRATION ENGINE")
     print(f"Mode: {'DRY RUN (NO MIGRATION EXECUTED)' if dry_run else 'LIVE EXECUTION TO SUPABASE'}")
