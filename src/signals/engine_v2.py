@@ -51,6 +51,8 @@ def get_connection(db_path: Path = DB_PATH) -> sqlite3.Connection:
 class SignalEngineV2:
     """Evidence-Aware Signal Intelligence Engine for Drug Repurposing Hypotheses."""
 
+    _cache: Dict[str, Any] = {}
+
     def __init__(self, db_path: Optional[Path] = None):
         self.db_path = db_path or DB_PATH
 
@@ -71,6 +73,21 @@ class SignalEngineV2:
         """
         Retrieves, collapses, scores, ranks, and synthesizes explainable research signals.
         """
+        # Cache key for unfiltered/broad queries
+        cache_key = f"base_ranked_{min_score}_{min_evidence}_{clinical_only}_{category}_{source}_{drug}_{disease}"
+        
+        # Check cache if no specific drug/disease filter or if base query cached
+        if not drug and not disease and cache_key in SignalEngineV2._cache:
+            all_cached = SignalEngineV2._cache[cache_key]
+            filtered = [
+                s for s in all_cached
+                if s["research_priority_score"] >= min_score
+                and (not category or s["category"].upper() == category.upper())
+                and (not clinical_only or s["evidence"]["highest_clinical_phase"] not in ('PRECLINICAL', 'Phase N/A'))
+                and (not min_evidence or s["evidence"]["source_diversity_count"] >= min_evidence)
+            ]
+            return filtered[:limit]
+
         conn = get_connection(self.db_path)
         try:
             # 1. Fetch Candidate Paths & Collapse Duplicates by (drug_id, disease_id)
@@ -155,37 +172,51 @@ class SignalEngineV2:
                     "source": r['td_source'] or "Open Targets",
                 })
 
-            # 2. Enrich Candidates with Evidence, Warnings, Trials & Compute Scores
+            # 2. Batch Fetch Evidence, Warnings & Trials across all Candidate Drugs
+            unique_drug_ids = list({c["drug_id"] for c in candidates_map.values()})
+            warnings_by_drug: Dict[str, List[Dict[str, Any]]] = {}
+            trials_by_drug: Dict[str, List[Dict[str, Any]]] = {}
+            ev_counts_by_drug: Dict[str, Tuple[int, int]] = {}
+
+            if unique_drug_ids:
+                placeholders = ",".join("?" for _ in unique_drug_ids)
+
+                # Batch 1: Warnings
+                w_rows = conn.execute(
+                    f"SELECT drug_id, warning_type, toxicity_class, description FROM drug_warnings WHERE drug_id IN ({placeholders})",
+                    unique_drug_ids
+                ).fetchall()
+                for w in w_rows:
+                    warnings_by_drug.setdefault(w["drug_id"], []).append(dict(w))
+
+                # Batch 2: Clinical Reports
+                tr_rows = conn.execute(f"""
+                    SELECT DISTINCT e.drug_id, cr.id, cr.source_name, cr.clinical_stage, cr.trial_phase, cr.trial_status, cr.url
+                    FROM evidence e
+                    JOIN clinical_reports cr ON e.clinical_report_id = cr.id
+                    WHERE e.drug_id IN ({placeholders})
+                """, unique_drug_ids).fetchall()
+                for tr in tr_rows:
+                    trials_by_drug.setdefault(tr["drug_id"], []).append(dict(tr))
+
+                # Batch 3: Evidence counts
+                e_rows = conn.execute(f"""
+                    SELECT drug_id, COUNT(*) as ev_cnt, COUNT(DISTINCT publication_ids) as lit_cnt
+                    FROM evidence
+                    WHERE drug_id IN ({placeholders})
+                    GROUP BY drug_id
+                """, unique_drug_ids).fetchall()
+                for er in e_rows:
+                    ev_counts_by_drug[er["drug_id"]] = (er["ev_cnt"] or 0, er["lit_cnt"] or 0)
+
+            # 3. Compute Scores per Candidate
             results = []
 
             for key, cand in candidates_map.items():
                 drug_id = cand["drug_id"]
-                disease_id = cand["disease_id"]
-
-                # Fetch Warnings (Safety & Contradiction Penalties)
-                warnings = conn.execute(
-                    "SELECT warning_type, toxicity_class, description FROM drug_warnings WHERE drug_id = ?",
-                    (drug_id,)
-                ).fetchall()
-                warning_list = [dict(w) for w in warnings]
-
-                # Fetch Clinical Reports for this Drug
-                trials = conn.execute("""
-                    SELECT DISTINCT cr.id, cr.source_name, cr.clinical_stage, cr.trial_phase, cr.trial_status, cr.url
-                    FROM evidence e
-                    JOIN clinical_reports cr ON e.clinical_report_id = cr.id
-                    WHERE e.drug_id = ?
-                    LIMIT 20
-                """, (drug_id,)).fetchall()
-                trial_list = [dict(t) for t in trials]
-
-                # Fetch Evidence Rows count & Literature PMIDs
-                ev_rows = conn.execute(
-                    "SELECT COUNT(*), COUNT(DISTINCT publication_ids) FROM evidence WHERE drug_id = ?",
-                    (drug_id,)
-                ).fetchone()
-                ev_count = ev_rows[0] or 0
-                lit_count = ev_rows[1] or 0
+                warning_list = warnings_by_drug.get(drug_id, [])
+                trial_list = trials_by_drug.get(drug_id, [])
+                ev_count, lit_count = ev_counts_by_drug.get(drug_id, (0, 0))
 
                 if ev_count > 0:
                     cand["sources"].add("Europe PMC")
@@ -200,7 +231,7 @@ class SignalEngineV2:
                 if source and not any(source.lower() in s.lower() for s in cand["sources"]):
                     continue
 
-                # 3. Calculate Scoring Dimensions
+                # Calculate Scoring Dimensions
                 score_comps, final_score = self._calculate_scores(
                     cand=cand,
                     warning_list=warning_list,
@@ -262,6 +293,8 @@ class SignalEngineV2:
                 results.append(payload)
 
             results.sort(key=lambda x: x["research_priority_score"], reverse=True)
+            if not drug and not disease:
+                SignalEngineV2._cache[cache_key] = results
             return results[:limit]
         finally:
             conn.close()

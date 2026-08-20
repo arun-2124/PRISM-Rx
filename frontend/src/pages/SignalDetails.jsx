@@ -41,7 +41,16 @@ export default function SignalDetails() {
   }, [id]);
 
   if (loading) {
-    return <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '60px 24px', color: 'var(--text-muted)' }}>Synthesizing Knowledge Graph Evidence...</div>;
+    return (
+      <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '80px 24px', textAlign: 'center' }}>
+        <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--primary-cyan)', marginBottom: '8px' }}>
+          Analyzing Evidence & Loading Neighborhood Graph...
+        </div>
+        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+          Retrieving provenanced paths, clinical study reports, and safety records.
+        </div>
+      </div>
+    );
   }
 
   if (error || !signal) {

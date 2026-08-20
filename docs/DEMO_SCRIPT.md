@@ -77,8 +77,8 @@ This document provides the step-by-step presentation walkthrough, exact user cli
 **Visual**: Click **`Export CSV`** or **`Export JSON`** button in the header.
 
 **Talking Points**:
-* "Researchers and biotech analysts can export full provenance scorecards and evidence lineages as CSV or JSON."
-* "PRISM-Rx demonstrates that lightweight SQLite graph abstractions can deliver sub-second drug repurposing signals at scale."
+* "Researchers and biotech analysts can export full provenance scorecards and evidence lineages as CSV or JSON in **under 1 millisecond**."
+* "PRISM-Rx demonstrates that lightweight SQLite graph abstractions can deliver sub-second drug repurposing signals at scale with **< 5 ms API response times**."
 
 **Key Action**: Open downloaded `PRISM_Rx_Research_Signals.csv` to show structured evidence fields.
 

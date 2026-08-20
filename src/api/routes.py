@@ -18,6 +18,10 @@ from src.graph.queries import get_connection
 router = APIRouter(prefix="/api")
 
 DB_PATH = Path("data/unified/medbase.db")
+ENGINE = SignalEngineV2(DB_PATH)
+
+# In-memory stats cache
+_STATS_CACHE: Dict[str, Any] = {}
 
 
 def make_signal_id(drug_id: str, disease_id: str) -> str:
@@ -51,6 +55,10 @@ def get_health():
 @router.get("/stats")
 def get_stats():
     """Global system statistics & metrics."""
+    global _STATS_CACHE
+    if _STATS_CACHE:
+        return _STATS_CACHE
+
     conn = get_connection(DB_PATH)
     try:
         drugs_cnt = conn.execute("SELECT COUNT(*) FROM drugs").fetchone()[0]
@@ -60,7 +68,7 @@ def get_stats():
         reports_cnt = conn.execute("SELECT COUNT(*) FROM clinical_reports").fetchone()[0]
         warnings_cnt = conn.execute("SELECT COUNT(*) FROM drug_warnings").fetchone()[0]
 
-        return {
+        _STATS_CACHE = {
             "nodes": {
                 "drugs": drugs_cnt,
                 "diseases": diseases_cnt,
@@ -91,6 +99,7 @@ def get_stats():
                 "INSUFFICIENT_EVIDENCE": 23500,
             }
         }
+        return _STATS_CACHE
     finally:
         conn.close()
 
@@ -110,8 +119,7 @@ def get_signals(
     sort_by: str = Query("score", description="Sort by score, evidence, clinical, diversity"),
 ):
     """Search and retrieve ranked repurposing research signals."""
-    engine = SignalEngineV2(DB_PATH)
-    raw_signals = engine.get_ranked_signals(
+    raw_signals = ENGINE.get_ranked_signals(
         limit=limit + offset,
         min_score=min_score,
         drug=drug,
@@ -162,8 +170,7 @@ def get_signals(
 def get_signal_by_id(signal_id: str):
     """Retrieve detailed research view for a single candidate signal."""
     drug_id, disease_id = parse_signal_id(signal_id)
-    engine = SignalEngineV2(DB_PATH)
-    signals = engine.get_ranked_signals(drug=drug_id, disease=disease_id, limit=5)
+    signals = ENGINE.get_ranked_signals(drug=drug_id, disease=disease_id, limit=5)
 
     for sig in signals:
         if sig["drug"]["id"] == drug_id and sig["disease"]["id"] == disease_id:
@@ -177,8 +184,7 @@ def get_signal_by_id(signal_id: str):
 def get_signal_graph(signal_id: str):
     """Retrieve 2-hop interactive graph topology (nodes, edges, layout properties)."""
     drug_id, disease_id = parse_signal_id(signal_id)
-    engine = SignalEngineV2(DB_PATH)
-    signals = engine.get_ranked_signals(drug=drug_id, disease=disease_id, limit=1)
+    signals = ENGINE.get_ranked_signals(drug=drug_id, disease=disease_id, limit=1)
 
     if not signals:
         raise HTTPException(status_code=404, detail="Candidate signal not found for graph generation.")
@@ -457,8 +463,7 @@ def export_signals(
     limit: int = Query(50, ge=1, le=200),
 ):
     """Export research signals as JSON or downloadable CSV file."""
-    engine = SignalEngineV2(DB_PATH)
-    signals = engine.get_ranked_signals(limit=limit, min_score=min_score)
+    signals = ENGINE.get_ranked_signals(limit=limit, min_score=min_score)
 
     if format.lower() == "csv":
         output = io.StringIO()
