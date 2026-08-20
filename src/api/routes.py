@@ -12,9 +12,15 @@ from fastapi import APIRouter, Query, HTTPException, Response
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
+from src.database.connection import get_db_connection, execute_query, adapt_sql, get_backend_type
 from src.signals.engine_v2 import SignalEngineV2, get_ranked_signals
 from src.graph.traversal import GraphTraversalEngine
-from src.graph.queries import get_connection
+
+
+def get_connection(db_path: Optional[Path] = None):
+    backend, conn = get_db_connection()
+    return conn
+
 
 router = APIRouter(prefix="/api")
 
@@ -62,12 +68,12 @@ def get_stats():
 
     conn = get_connection(DB_PATH)
     try:
-        drugs_cnt = conn.execute("SELECT COUNT(*) FROM drugs").fetchone()[0]
-        diseases_cnt = conn.execute("SELECT COUNT(*) FROM diseases").fetchone()[0]
-        targets_cnt = conn.execute("SELECT COUNT(*) FROM targets").fetchone()[0]
-        evidence_cnt = conn.execute("SELECT COUNT(*) FROM evidence").fetchone()[0]
-        reports_cnt = conn.execute("SELECT COUNT(*) FROM clinical_reports").fetchone()[0]
-        warnings_cnt = conn.execute("SELECT COUNT(*) FROM drug_warnings").fetchone()[0]
+        drugs_cnt = list(dict(execute_query(conn, "SELECT COUNT(*) FROM drugs").fetchone()).values())[0]
+        diseases_cnt = list(dict(execute_query(conn, "SELECT COUNT(*) FROM diseases").fetchone()).values())[0]
+        targets_cnt = list(dict(execute_query(conn, "SELECT COUNT(*) FROM targets").fetchone()).values())[0]
+        evidence_cnt = list(dict(execute_query(conn, "SELECT COUNT(*) FROM evidence").fetchone()).values())[0]
+        reports_cnt = list(dict(execute_query(conn, "SELECT COUNT(*) FROM clinical_reports").fetchone()).values())[0]
+        warnings_cnt = list(dict(execute_query(conn, "SELECT COUNT(*) FROM drug_warnings").fetchone()).values())[0]
 
         _STATS_CACHE = {
             "nodes": {
@@ -169,7 +175,7 @@ def get_signals(
 
 def classify_signal_status(conn, drug_id: str, disease_id: str, ev_records: int = 0, sources_cnt: int = 0, trials_cnt: int = 0):
     """Classify candidate Drug-Disease pair as ESTABLISHED, EMERGING, or HYPOTHESIS based on verified database records."""
-    est_row = conn.execute("""
+    est_row = execute_query(conn, """
         SELECT max_clinical_stage FROM drug_disease
         WHERE drug_id = ? AND disease_id = ?
     """, (drug_id, disease_id)).fetchone()
@@ -241,13 +247,13 @@ def get_signal_status(signal_id: str):
     drug_id, disease_id = parse_signal_id(signal_id)
     conn = get_connection(DB_PATH)
     try:
-        ev_cnt = conn.execute("SELECT COUNT(*) FROM evidence WHERE drug_id = ?", (drug_id,)).fetchone()[0]
-        dt_cnt = conn.execute("SELECT COUNT(*) FROM drug_target WHERE drug_id = ?", (drug_id,)).fetchone()[0]
-        trials_cnt = conn.execute("""
+        ev_cnt = list(dict(execute_query(conn, "SELECT COUNT(*) FROM evidence WHERE drug_id = ?", (drug_id,)).fetchone()).values())[0]
+        dt_cnt = list(dict(execute_query(conn, "SELECT COUNT(*) FROM drug_target WHERE drug_id = ?", (drug_id,)).fetchone()).values())[0]
+        trials_cnt = list(dict(execute_query(conn, """
             SELECT COUNT(DISTINCT cr.id) FROM evidence e
             JOIN clinical_reports cr ON e.clinical_report_id = cr.id
             WHERE e.drug_id = ?
-        """, (drug_id,)).fetchone()[0]
+        """, (drug_id,)).fetchone()).values())[0]
 
         sources_cnt = (1 if ev_cnt > 0 else 0) + (1 if dt_cnt > 0 else 0) + (1 if trials_cnt > 0 else 0)
         cls_res = classify_signal_status(conn, drug_id, disease_id, ev_cnt, sources_cnt, trials_cnt)

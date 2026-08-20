@@ -9,7 +9,7 @@ Maintains 100% backward compatibility. SQLite remains the default active databas
 
 import os
 import sqlite3
-from typing import Tuple, Any
+from typing import Tuple, Any, Optional
 
 SQLITE_DB_DEFAULT = "data/unified/medbase.db"
 
@@ -43,8 +43,20 @@ def get_db_connection() -> Tuple[str, Any]:
     conn.row_factory = sqlite3.Row
     return "sqlite", conn
 
-def adapt_sql(query: str, backend: str) -> str:
+def adapt_sql(query: str, backend: Optional[str] = None) -> str:
     """Adapts parameter placeholders ('?' -> '%s') when running against PostgreSQL."""
-    if backend == "postgres":
+    b = backend or get_backend_type()
+    if b == "postgres":
         return query.replace("?", "%s")
     return query
+
+def execute_query(conn: Any, sql: str, params: Any = ()) -> Any:
+    """Executes a query adaptively on SQLite or PostgreSQL connection."""
+    backend = get_backend_type()
+    adapted = adapt_sql(sql, backend)
+    if backend == "postgres":
+        cur = conn.cursor()
+        cur.execute(adapted, params)
+        return cur
+    else:
+        return conn.execute(adapted, params)
