@@ -4,11 +4,14 @@ import { BrowserRouter } from 'react-router-dom'
 import './index.css'
 import App from './App.jsx'
 
-// Register PWA Service Worker
+// Register PWA Service Worker with Auto Update & Cache Clearing
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
-      .then((reg) => console.log('PRISM-Rx ServiceWorker registered:', reg.scope))
+      .then((reg) => {
+        console.log('PRISM-Rx ServiceWorker registered:', reg.scope);
+        reg.update();
+      })
       .catch((err) => console.error('PRISM-Rx ServiceWorker registration failed:', err));
   });
 }

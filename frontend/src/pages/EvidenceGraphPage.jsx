@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { GitMerge, Layers, Search, RefreshCw } from 'lucide-react';
+import { GitMerge, Layers, Search, RefreshCw, AlertTriangle } from 'lucide-react';
 import { fetchSignalGraph, fetchSignals } from '../api';
 import InteractiveGraph from '../components/InteractiveGraph';
 
@@ -16,6 +16,7 @@ export default function EvidenceGraphPage() {
   const [selectedSignalId, setSelectedSignalId] = useState('DR:CHEMBL403989__D:MONDO_0004967');
   const [graphData, setGraphData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [errorDetails, setErrorDetails] = useState(null);
 
   useEffect(() => {
     fetchSignals({ limit: 20 })
@@ -31,19 +32,39 @@ export default function EvidenceGraphPage() {
           setCandidateList(Array.from(map.values()));
         }
       })
-      .catch((err) => console.error('Failed to fetch candidate signals:', err));
+      .catch((err) => console.error('[GRAPH DEBUG] Failed to fetch candidate signals:', err));
   }, []);
 
   useEffect(() => {
-    if (!selectedSignalId) return;
+    if (!selectedSignalId) {
+      console.log('[GRAPH DEBUG] selectedSignalId is empty, skipping graph fetch.');
+      return;
+    }
+
+    const actualGraphUrl = `http://localhost:8000/api/graph/${encodeURIComponent(selectedSignalId)}`;
+    console.log('[GRAPH DEBUG] selectedSignalId:', selectedSignalId);
+    console.log('[GRAPH DEBUG] API URL:', actualGraphUrl);
+
     setLoading(true);
+    setErrorDetails(null);
+
     fetchSignalGraph(selectedSignalId)
       .then((data) => {
+        console.log('[GRAPH DEBUG] Response Data Received:', {
+          signal_id: data?.signal_id,
+          nodes_count: data?.nodes?.length || 0,
+          edges_count: data?.edges?.length || 0,
+        });
         setGraphData(data);
         setLoading(false);
       })
       .catch((err) => {
-        console.error('Graph fetch error:', err);
+        console.error('[GRAPH DEBUG] Graph fetch failed:', err);
+        setErrorDetails({
+          url: actualGraphUrl,
+          message: err.message || 'Failed to fetch graph data from backend API.',
+        });
+        setGraphData(null);
         setLoading(false);
       });
   }, [selectedSignalId]);
@@ -89,8 +110,17 @@ export default function EvidenceGraphPage() {
       ) : graphData ? (
         <InteractiveGraph graphData={graphData} />
       ) : (
-        <div className="glass-card" style={{ padding: '40px', color: 'var(--accent-rose)' }}>
-          Failed to load graph topology for selected candidate.
+        <div className="glass-card" style={{ padding: '40px', borderLeft: '4px solid var(--accent-rose)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--accent-rose)', fontWeight: 800, fontSize: '1.1rem', marginBottom: '8px' }}>
+            <AlertTriangle size={22} />
+            Failed to load graph topology for selected candidate.
+          </div>
+          {errorDetails && (
+            <div style={{ background: 'rgba(0,0,0,0.3)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '0.85rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', marginTop: '12px' }}>
+              <div style={{ marginBottom: '6px' }}><strong style={{ color: '#ffffff' }}>Requested API URL:</strong> {errorDetails.url}</div>
+              <div><strong style={{ color: '#ffffff' }}>Error Trace:</strong> {errorDetails.message}</div>
+            </div>
+          )}
         </div>
       )}
     </div>

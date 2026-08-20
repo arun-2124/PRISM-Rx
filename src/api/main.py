@@ -1,4 +1,7 @@
 import os
+from scripts.migrate_sqlite_to_supabase import load_env_file
+load_env_file()
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from src.api.routes import router
