@@ -3,18 +3,35 @@ import { GitMerge, Layers, Search, RefreshCw } from 'lucide-react';
 import { fetchSignalGraph, fetchSignals } from '../api';
 import InteractiveGraph from '../components/InteractiveGraph';
 
+const BENCHMARK_CANDIDATES = [
+  { id: 'DR:CHEMBL403989__D:MONDO_0004967', label: 'Tg100-801 → acute lymphoblastic leukemia (82.0 pts)' },
+  { id: 'DR:CHEMBL473159__D:EFO_0005762', label: 'Phloroglucinol → neuropathic pain (89.5 pts)' },
+  { id: 'DR:CHEMBL1059__D:EFO_0010282', label: 'Pregabalin → gastrointestinal disease (88.0 pts)' },
+  { id: 'DR:CHEMBL1201__D:MONDO_0004992', label: 'Metformin → cancer (28.0 pts)' },
+  { id: 'DR:CHEMBL4__D:EFO_0000544', label: 'Ofloxacin → infection (95.0 pts)' },
+];
+
 export default function EvidenceGraphPage() {
-  const [signals, setSignals] = useState([]);
+  const [candidateList, setCandidateList] = useState(BENCHMARK_CANDIDATES);
   const [selectedSignalId, setSelectedSignalId] = useState('DR:CHEMBL403989__D:MONDO_0004967');
   const [graphData, setGraphData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchSignals({ limit: 20, min_score: 50 })
+    fetchSignals({ limit: 20 })
       .then((data) => {
-        setSignals(data.signals || []);
+        if (data?.signals?.length > 0) {
+          const apiOptions = data.signals.map((s) => ({
+            id: s.signal_id,
+            label: `${s.drug.name} → ${s.disease.name} (${s.research_priority_score} pts)`,
+          }));
+          const map = new Map();
+          BENCHMARK_CANDIDATES.forEach((c) => map.set(c.id, c));
+          apiOptions.forEach((c) => map.set(c.id, c));
+          setCandidateList(Array.from(map.values()));
+        }
       })
-      .catch((err) => console.error(err));
+      .catch((err) => console.error('Failed to fetch candidate signals:', err));
   }, []);
 
   useEffect(() => {
@@ -50,13 +67,13 @@ export default function EvidenceGraphPage() {
           <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Select Candidate Signal:</span>
           <select
             className="input-control"
-            style={{ width: '320px' }}
+            style={{ width: '380px', fontWeight: 600 }}
             value={selectedSignalId}
             onChange={(e) => setSelectedSignalId(e.target.value)}
           >
-            {signals.map((sig) => (
-              <option key={sig.signal_id} value={sig.signal_id}>
-                {sig.drug.name} &rarr; {sig.disease.name} ({sig.research_priority_score} pts)
+            {candidateList.map((cand) => (
+              <option key={cand.id} value={cand.id}>
+                {cand.label}
               </option>
             ))}
           </select>
