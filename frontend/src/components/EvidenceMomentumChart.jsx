@@ -3,10 +3,10 @@ import { TrendingUp, FileText, Calendar, Activity, Zap } from 'lucide-react';
 
 export default function EvidenceMomentumChart({ candidateName = 'Tg100-801 -> acute lymphoblastic leukemia', momentum = '+68%' }) {
   const eventMarkers = [
-    { date: 'JAN 2026', type: 'Preprint', title: 'bioRxiv: Dual Kinase Inhibition Mechanism', impact: '+12%' },
-    { date: 'FEB 2026', type: 'Trial Update', title: 'ClinicalTrials.gov: Phase 1 Enrollment Complete', impact: '+24%' },
-    { date: 'MAR 2026', type: 'Conference', title: 'AACR 2026 Abstract: Target Binding Affinity', impact: '+45%' },
-    { date: 'CURRENT', type: 'Signal Detected', title: 'PRISM-Rx High-Confidence Research Signal', impact: momentum },
+    { date: 'Q1 PREPRINTS', type: 'Preprint', title: 'bioRxiv: Dual Kinase Inhibition Mechanism', impact: '+12%' },
+    { date: 'Q2 TRIALS', type: 'Trial Update', title: 'ClinicalTrials.gov: Phase 1 Enrollment Complete', impact: '+24%' },
+    { date: 'Q3 ABSTRACTS', type: 'Conference', title: 'AACR Abstract: Target Binding Affinity', impact: '+45%' },
+    { date: 'CURRENT SIGNAL', type: 'Signal Detected', title: 'PRISM-Rx High-Confidence Research Signal', impact: 'EVIDENCE CONVERGED' },
   ];
 
   return (
@@ -15,18 +15,18 @@ export default function EvidenceMomentumChart({ candidateName = 'Tg100-801 -> ac
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary-cyan)', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '4px' }}>
             <TrendingUp size={16} />
-            EVIDENCE MOMENTUM ACCELERATION
+            EVIDENCE CONVERGENCE TRAJECTORY (ILLUSTRATIVE DEMO VISUALIZATION)
           </div>
           <h3 style={{ fontSize: '1.2rem', color: 'var(--text-main)' }}>
-            30-Day Research Activity Surge
+            Research Publication & Evidence Accumulation Trend
           </h3>
         </div>
 
         <div style={{ textAlign: 'right', background: 'rgba(16, 185, 129, 0.1)', padding: '8px 16px', borderRadius: '8px', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
-          <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#34d399', fontFamily: 'var(--font-heading)' }}>
-            {momentum}
+          <div style={{ fontSize: '1rem', fontWeight: 800, color: '#34d399', fontFamily: 'var(--font-heading)' }}>
+            CONVERGED
           </div>
-          <div style={{ fontSize: '0.65rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Evidence Surge</div>
+          <div style={{ fontSize: '0.65rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Evidence Status</div>
         </div>
       </div>
 

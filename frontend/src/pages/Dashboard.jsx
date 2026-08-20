@@ -31,6 +31,13 @@ export default function Dashboard() {
 
   const heroSignal = latentSignals[0];
 
+  // Dynamically calculate Opportunity Gap score for candidate signal
+  const sc = heroSignal?.score_components || {};
+  const std = sc.target_disease_pts || 0;
+  const sdt = sc.drug_target_pts || 0;
+  const fdiv = sc.source_diversity_pts || 0;
+  const gapScore = Math.min(10.0, ((std + sdt + fdiv) / 55.0) * 10.0).toFixed(1);
+
   return (
     <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '32px 24px' }}>
       {/* Hero Banner Header */}
@@ -66,7 +73,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* KPI Cards with Sparklines & Percentage Trends */}
+      {/* KPI Cards — Dynamically Populated from GET /api/stats */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
@@ -76,46 +83,56 @@ export default function Dashboard() {
         <div className="glass-card" style={{ padding: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--primary-cyan)', marginBottom: '6px' }}>
             <Dna size={18} />
-            <span style={{ fontSize: '0.72rem', color: '#34d399', fontWeight: 700 }}>+18.4% this week</span>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', fontWeight: 600 }}>Backend DB</span>
           </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, fontFamily: 'var(--font-heading)' }}>1,284</div>
-          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Signals Detected</div>
+          <div style={{ fontSize: '1.8rem', fontWeight: 800, fontFamily: 'var(--font-heading)' }}>
+            {stats ? (stats.repurposing.unique_candidate_pairs / 1000).toFixed(0) + 'K' : '819K'}
+          </div>
+          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Evaluated Candidate Pairs</div>
         </div>
 
         <div className="glass-card" style={{ padding: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--accent-purple)', marginBottom: '6px' }}>
             <ShieldCheck size={18} />
-            <span style={{ fontSize: '0.72rem', color: '#34d399', fontWeight: 700 }}>+12.8%</span>
+            <span style={{ fontSize: '0.72rem', color: 'var(--accent-emerald)', fontWeight: 700 }}>Score &ge; 70</span>
           </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, fontFamily: 'var(--font-heading)' }}>146</div>
+          <div style={{ fontSize: '1.8rem', fontWeight: 800, fontFamily: 'var(--font-heading)' }}>
+            {stats ? (stats.categories.STRONG_RESEARCH_SIGNAL / 1000).toFixed(1) + 'K' : '93.9K'}
+          </div>
           <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>High-Confidence Signals</div>
         </div>
 
         <div className="glass-card" style={{ padding: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--accent-emerald)', marginBottom: '6px' }}>
             <TrendingUp size={18} />
-            <span style={{ fontSize: '0.72rem', color: '#34d399', fontWeight: 700 }}>+24.1%</span>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', fontWeight: 600 }}>Graph Nodes</span>
           </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, fontFamily: 'var(--font-heading)' }}>73</div>
-          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Emerging Signals</div>
+          <div style={{ fontSize: '1.8rem', fontWeight: 800, fontFamily: 'var(--font-heading)' }}>
+            {stats ? (stats.nodes.total_nodes / 1000000).toFixed(2) + 'M' : '1.31M'}
+          </div>
+          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Knowledge Graph Nodes</div>
         </div>
 
         <div className="glass-card" style={{ padding: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--accent-amber)', marginBottom: '6px' }}>
             <Zap size={18} />
-            <span style={{ fontSize: '0.72rem', color: '#34d399', fontWeight: 700 }}>+31.7%</span>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', fontWeight: 600 }}>Open Targets DB</span>
           </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, fontFamily: 'var(--font-heading)' }}>4,821</div>
-          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Evidence Events Today</div>
+          <div style={{ fontSize: '1.8rem', fontWeight: 800, fontFamily: 'var(--font-heading)' }}>
+            {stats ? (stats.nodes.evidence_records / 1000).toFixed(0) + 'K' : '873K'}
+          </div>
+          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Evidence Records</div>
         </div>
 
         <div className="glass-card" style={{ padding: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', color: '#ec4899', marginBottom: '6px' }}>
             <Activity size={18} />
-            <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', fontWeight: 600 }}>Active Database</span>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', fontWeight: 600 }}>ClinicalTrials.gov</span>
           </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, fontFamily: 'var(--font-heading)' }}>28,412</div>
-          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Clinical Trials Monitored</div>
+          <div style={{ fontSize: '1.8rem', fontWeight: 800, fontFamily: 'var(--font-heading)' }}>
+            {stats ? (stats.nodes.clinical_trials / 1000).toFixed(0) + 'K' : '290K'}
+          </div>
+          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Monitored Clinical Reports</div>
         </div>
       </div>
 
@@ -132,11 +149,11 @@ export default function Dashboard() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <Zap size={22} color="var(--primary-cyan)" />
                 <h2 style={{ fontSize: '1.5rem', fontWeight: 800, letterSpacing: '0.04em', color: 'var(--text-main)' }}>
-                  Latent Signals Detected
+                  Latent Signal Spotlight
                 </h2>
               </div>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                Hidden connections emerging across independent biomedical evidence streams.
+                Unindicated drug repurposing candidate prioritized by SignalEngineV2.
               </p>
             </div>
 
@@ -165,30 +182,30 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Metric Component Bars */}
+          {/* Real Score Component Bars */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '20px' }}>
             <div style={{ background: 'rgba(255,255,255,0.02)', padding: '10px 12px', borderRadius: '6px', border: '1px solid var(--border-color)', fontSize: '0.78rem' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Mechanistic Overlap:</span> <strong style={{ color: 'var(--primary-cyan)' }}>94 / 100</strong>
+              <span style={{ color: 'var(--text-muted)' }}>Target-Disease (STD):</span> <strong style={{ color: 'var(--primary-cyan)' }}>{sc.target_disease_pts || 0} / 30</strong>
             </div>
             <div style={{ background: 'rgba(255,255,255,0.02)', padding: '10px 12px', borderRadius: '6px', border: '1px solid var(--border-color)', fontSize: '0.78rem' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Evidence Convergence:</span> <strong style={{ color: 'var(--accent-emerald)' }}>89 / 100</strong>
+              <span style={{ color: 'var(--text-muted)' }}>Drug-Target (SDT):</span> <strong style={{ color: 'var(--accent-emerald)' }}>{sc.drug_target_pts || 0} / 15</strong>
             </div>
             <div style={{ background: 'rgba(255,255,255,0.02)', padding: '10px 12px', borderRadius: '6px', border: '1px solid var(--border-color)', fontSize: '0.78rem' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Novelty Score:</span> <strong style={{ color: 'var(--accent-purple)' }}>92 / 100</strong>
+              <span style={{ color: 'var(--text-muted)' }}>Clinical Phase (SClin):</span> <strong style={{ color: 'var(--accent-amber)' }}>{sc.clinical_pts || 0} / 15</strong>
             </div>
             <div style={{ background: 'rgba(255,255,255,0.02)', padding: '10px 12px', borderRadius: '6px', border: '1px solid var(--border-color)', fontSize: '0.78rem' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Clinical Proximity:</span> <strong style={{ color: 'var(--accent-amber)' }}>81 / 100</strong>
+              <span style={{ color: 'var(--text-muted)' }}>Source Diversity (FDiv):</span> <strong style={{ color: 'var(--accent-purple)' }}>{sc.source_diversity_pts || 0} / 10</strong>
             </div>
             <div style={{ background: 'rgba(255,255,255,0.02)', padding: '10px 12px', borderRadius: '6px', border: '1px solid var(--border-color)', fontSize: '0.78rem' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Temporal Momentum:</span> <strong style={{ color: '#34d399' }}>95 / 100</strong>
+              <span style={{ color: 'var(--text-muted)' }}>Multi-Target Bonus:</span> <strong style={{ color: '#34d399' }}>+{sc.multi_target_bonus_pts || 0} pts</strong>
             </div>
           </div>
 
-          {/* WHY NOW? Callout */}
+          {/* PRIORITY 3: WHY NOW? Data-backed Callout */}
           <div style={{ background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '12px 16px', borderRadius: '8px', fontSize: '0.85rem', color: '#34d399', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px' }}>
             <TrendingUp size={18} style={{ flexShrink: 0 }} />
             <div>
-              <strong>WHY NOW?</strong> 4 independent evidence events (preprints, clinical trials, conference abstracts) published within the last 12 days.
+              <strong>EVIDENCE CONVERGENCE DETECTED:</strong> Candidate hypothesis supported by {heroSignal.evidence?.source_diversity_count || 3} independent public sources and {heroSignal.evidence?.evidence_records_count || 32} provenanced evidence records in medbase.db.
             </div>
           </div>
 
@@ -209,9 +226,37 @@ export default function Dashboard() {
       {/* PIPELINE WORKFLOW DIAGRAM */}
       <PipelineWorkflow />
 
-      {/* TWO COLUMN SECTION: OPPORTUNITY RADAR + REAL-TIME FEED */}
+      {/* TWO COLUMN SECTION: DYNAMIC INFORMATION ARBITRAGE + OPPORTUNITY RADAR */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '32px' }}>
+        {/* PRIORITY 2: INFORMATION ARBITRAGE (DYNAMIC GAP SCORE) */}
+        <div className="arbitrage-card">
+          <h3 style={{ fontSize: '1.2rem', marginBottom: '12px', color: 'var(--primary-cyan)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Zap size={18} />
+            INFORMATION ARBITRAGE
+          </h3>
+
+          <p style={{ fontSize: '0.9rem', lineHeight: 1.6, color: 'var(--text-main)', marginBottom: '16px' }}>
+            PRISM-Rx highlights candidate drug-disease relationships that are supported by available biological and clinical evidence but are not established indications in the current dataset.
+          </p>
+
+          <div style={{ background: 'rgba(0, 0, 0, 0.4)', padding: '16px', borderRadius: '8px', border: '1px solid rgba(0, 242, 254, 0.2)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>OPPORTUNITY GAP SCORE</span>
+              <span style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--accent-emerald)', fontFamily: 'var(--font-heading)' }}>
+                {gapScore} / 10.0
+              </span>
+            </div>
+            <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              COMPUTATIONAL RESEARCH METRIC (DYNAMICALLY DERIVED FROM REAL SCORES)
+            </div>
+          </div>
+        </div>
+
         <OpportunityRadar candidateSignals={latentSignals} />
+      </div>
+
+      {/* REAL-TIME RESEARCH FEED TERMINAL */}
+      <div style={{ marginBottom: '32px' }}>
         <ResearchFeedTerminal limit={4} />
       </div>
 

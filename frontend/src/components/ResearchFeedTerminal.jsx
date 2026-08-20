@@ -71,7 +71,7 @@ export default function ResearchFeedTerminal({ limit = 5 }) {
         </div>
 
         <span className="live-pulse" style={{ fontSize: '0.68rem' }}>
-          LIVE FEED (OPEN TARGETS 26.06 + EUROPE PMC)
+          DEMO INTELLIGENCE FEED (SIMULATED STREAM &bull; CANDIDATE LINKS ARE REAL)
         </span>
       </div>
 
