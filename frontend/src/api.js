@@ -31,8 +31,12 @@ export async function fetchSignalById(id) {
   return res.json();
 }
 
-export async function fetchSignalGraph(id) {
-  const res = await fetch(`${API_BASE}/graph/${encodeURIComponent(id)}`);
+export async function fetchSignalGraph(id, opts = {}) {
+  const query = new URLSearchParams();
+  if (opts.expanded) query.append('expanded', 'true');
+  if (opts.max_nodes) query.append('max_nodes', opts.max_nodes);
+  const qStr = query.toString() ? `?${query.toString()}` : '';
+  const res = await fetch(`${API_BASE}/graph/${encodeURIComponent(id)}${qStr}`);
   if (!res.ok) throw new Error('Failed to fetch graph data');
   return res.json();
 }

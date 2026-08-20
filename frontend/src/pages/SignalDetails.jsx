@@ -65,6 +65,14 @@ export default function SignalDetails() {
       });
   };
 
+  const handleExpandNeighborhood = () => {
+    fetchSignalGraph(id, { expanded: true, max_nodes: 100 })
+      .then(res => {
+        if (res) setGraphData(res);
+      })
+      .catch(err => console.error('Neighborhood expansion error:', err));
+  };
+
   if (loading) {
     return (
       <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '80px 24px', textAlign: 'center' }}>
@@ -274,7 +282,7 @@ export default function SignalDetails() {
       {/* Interactive 2-Hop Knowledge Neighborhood Graph */}
       {graphData && (
         <div style={{ marginBottom: '32px' }}>
-          <InteractiveGraph graphData={graphData} />
+          <InteractiveGraph graphData={graphData} onExpandNeighborhood={handleExpandNeighborhood} />
         </div>
       )}
 

@@ -181,117 +181,218 @@ def get_signal_by_id(signal_id: str):
 
 
 @router.get("/graph/{signal_id}")
-def get_signal_graph(signal_id: str):
+def get_signal_graph(
+    signal_id: str,
+    max_nodes: Optional[int] = Query(50, ge=10, le=200),
+    expanded: Optional[bool] = Query(False, description="Expand 2-hop neighborhood to include additional targets and diseases")
+):
     """Retrieve 2-hop interactive graph topology (nodes, edges, layout properties)."""
     drug_id, disease_id = parse_signal_id(signal_id)
-    signals = ENGINE.get_ranked_signals(drug=drug_id, disease=disease_id, limit=1)
+    sigs = ENGINE.get_ranked_signals(drug=drug_id, disease=disease_id, limit=1)
 
-    if not signals:
+    if not sigs:
         raise HTTPException(status_code=404, detail="Candidate signal not found for graph generation.")
 
-    sig = signals[0]
+    sig = sigs[0]
 
-    # Build Interactive Graph Topology
-    nodes = []
-    edges = []
+    nodes_dict = {}
+    edges_dict = {}
 
-    # Central Drug Node
-    nodes.append({
-        "id": sig["drug"]["id"],
-        "label": sig["drug"]["name"],
-        "type": "Drug",
-        "color": "#00f2fe",  # Cyan
-        "size": 32,
-        "details": {
+    def add_node(nid, label, ntype, color, size, details):
+        if nid not in nodes_dict:
+            nodes_dict[nid] = {
+                "id": nid,
+                "label": label,
+                "type": ntype,
+                "color": color,
+                "size": size,
+                "details": details
+            }
+
+    def add_edge(eid, src, dst, label, etype, color, props=None):
+        if eid not in edges_dict:
+            edges_dict[eid] = {
+                "id": eid,
+                "source": src,
+                "target": dst,
+                "label": label,
+                "type": etype,
+                "color": color,
+                "properties": props or {}
+            }
+
+    # 1. Primary Central Drug Node
+    add_node(
+        sig["drug"]["id"],
+        sig["drug"]["name"],
+        "Drug",
+        "#00f2fe",  # Cyan
+        34,
+        {
             "chembl_id": sig["drug"]["chembl_id"],
             "type": sig["drug"]["type"],
-            "max_stage": sig["drug"]["max_stage"],
+            "max_clinical_stage": sig["drug"]["max_stage"],
         }
-    })
+    )
 
-    # Disease Node
-    nodes.append({
-        "id": sig["disease"]["id"],
-        "label": sig["disease"]["name"],
-        "type": "Disease",
-        "color": "#9d4edd",  # Violet
-        "size": 32,
-        "details": {
+    # 2. Target Candidate Disease Node
+    add_node(
+        sig["disease"]["id"],
+        sig["disease"]["name"],
+        "Disease",
+        "#9d4edd",  # Violet
+        34,
+        {
             "source_id": sig["disease"]["source_id"],
+            "name": sig["disease"]["name"],
         }
-    })
+    )
 
-    # Intermediate Target Nodes & Edges
+    # 3. Intermediate Target Nodes & Edges
     for p in sig["supporting_paths"]:
         tgt = p["target"]
         tgt_id = tgt["id"]
 
-        nodes.append({
-            "id": tgt_id,
-            "label": tgt["symbol"],
-            "type": "Target",
-            "color": "#10b981",  # Emerald green
-            "size": 24,
-            "details": {
-                "name": tgt["name"],
-                "class": tgt.get("class"),
+        add_node(
+            tgt_id,
+            tgt["symbol"],
+            "Target",
+            "#10b981",  # Emerald green
+            26,
+            {
+                "approved_symbol": tgt["symbol"],
+                "approved_name": tgt["name"],
+                "target_class": tgt.get("class") or "Protein Target",
+                "mechanism_of_action": p.get("mechanism") or p.get("action_type", "INHIBITOR"),
             }
-        })
+        )
 
-        # Drug -> TARGETS -> Target edge
-        edges.append({
-            "id": f"e_{sig['drug']['id']}_{tgt_id}",
-            "source": sig["drug"]["id"],
-            "target": tgt_id,
-            "label": f"TARGETS ({p.get('action_type', 'INHIBITOR')})",
-            "type": "TARGETS",
-            "color": "#00f2fe",
-        })
+        add_edge(
+            f"e_{sig['drug']['id']}_{tgt_id}",
+            sig["drug"]["id"],
+            tgt_id,
+            f"TARGETS ({p.get('action_type', 'INHIBITOR')})",
+            "TARGETS",
+            "#00f2fe",
+            {"action_type": p.get("action_type", "INHIBITOR"), "mechanism": p.get("mechanism")}
+        )
 
-        # Target -> ASSOCIATED_WITH -> Disease edge
-        edges.append({
-            "id": f"e_{tgt_id}_{sig['disease']['id']}",
-            "source": tgt_id,
-            "target": sig["disease"]["id"],
-            "label": f"ASSOCIATED_WITH (score: {p.get('target_disease_score', 0.0)})",
-            "type": "ASSOCIATED_WITH",
-            "color": "#10b981",
-        })
+        add_edge(
+            f"e_{tgt_id}_{sig['disease']['id']}",
+            tgt_id,
+            sig["disease"]["id"],
+            f"ASSOCIATED_WITH (score: {p.get('target_disease_score', 0.0)})",
+            "ASSOCIATED_WITH",
+            "#10b981",
+            {"score": p.get("target_disease_score", 0.0), "source": p.get("source", "Open Targets")}
+        )
 
-    # Add Clinical Trial nodes if present
+    # 4. Fetch Clinical Trials & Additional Database Neighbors
     conn = get_connection(DB_PATH)
     try:
+        # Clinical Trials for Drug
         trials = conn.execute("""
-            SELECT DISTINCT cr.id, cr.source_name, cr.trial_phase, cr.trial_status
+            SELECT DISTINCT cr.id, cr.source_name, cr.trial_phase, cr.trial_status, cr.url
             FROM evidence e
             JOIN clinical_reports cr ON e.clinical_report_id = cr.id
             WHERE e.drug_id = ?
+            LIMIT ?
+        """, (drug_id, 10 if expanded else 5)).fetchall()
+
+        for tr_row in trials:
+            tr = dict(tr_row)
+            tr_id = f"TRIAL:{tr['id']}"
+            add_node(
+                tr_id,
+                f"Trial {tr['id']}",
+                "ClinicalTrial",
+                "#f59e0b",  # Amber
+                22,
+                {
+                    "trial_id": tr["id"],
+                    "phase": tr["trial_phase"],
+                    "status": tr["trial_status"],
+                    "url": tr.get("url"),
+                }
+            )
+            add_edge(
+                f"e_{sig['drug']['id']}_{tr_id}",
+                sig["drug"]["id"],
+                tr_id,
+                "STUDIED_IN",
+                "STUDIED_IN",
+                "#f59e0b",
+                {"phase": tr["trial_phase"], "status": tr["trial_status"]}
+            )
+
+        # Established Indications for Drug (Drug -> Disease)
+        indications = conn.execute("""
+            SELECT dis.id, dis.name, dd.max_clinical_stage
+            FROM drug_disease dd
+            JOIN diseases dis ON dd.disease_id = dis.id
+            WHERE dd.drug_id = ?
             LIMIT 5
         """, (drug_id,)).fetchall()
 
-        for tr in trials:
-            tr_id = f"TRIAL:{tr['id']}"
-            nodes.append({
-                "id": tr_id,
-                "label": f"Trial {tr['id']}",
-                "type": "ClinicalTrial",
-                "color": "#f59e0b",  # Amber
-                "size": 20,
-                "details": {
-                    "phase": tr["trial_phase"],
-                    "status": tr["trial_status"],
-                }
-            })
-            edges.append({
-                "id": f"e_{sig['drug']['id']}_{tr_id}",
-                "source": sig["drug"]["id"],
-                "target": tr_id,
-                "label": "STUDIED_IN",
-                "type": "STUDIED_IN",
-                "color": "#f59e0b",
-            })
+        for ind in indications:
+            add_node(
+                ind["id"],
+                ind["name"],
+                "Disease",
+                "#9d4edd",
+                28,
+                {"source_id": ind["id"], "max_clinical_stage": ind["max_clinical_stage"]}
+            )
+            add_edge(
+                f"e_{sig['drug']['id']}_{ind['id']}",
+                sig["drug"]["id"],
+                ind["id"],
+                f"INDICATED_FOR ({ind['max_clinical_stage']})",
+                "INDICATED_FOR",
+                "#a855f7",
+                {"clinical_stage": ind["max_clinical_stage"]}
+            )
+
+        # If EXPANDED, fetch additional targets for the drug from DB
+        if expanded or len(nodes_dict) < max_nodes:
+            add_targets = conn.execute("""
+                SELECT t.id, t.approved_symbol, t.approved_name, t.target_class, dt.action_type, dt.mechanism_of_action
+                FROM drug_target dt
+                JOIN targets t ON dt.target_id = t.id
+                WHERE dt.drug_id = ?
+                LIMIT ?
+            """, (drug_id, max_nodes - len(nodes_dict))).fetchall()
+
+            for t_row in add_targets:
+                t_id = t_row["id"]
+                add_node(
+                    t_id,
+                    t_row["approved_symbol"],
+                    "Target",
+                    "#10b981",
+                    26,
+                    {
+                        "approved_symbol": t_row["approved_symbol"],
+                        "approved_name": t_row["approved_name"],
+                        "target_class": t_row["target_class"] or "Protein Target",
+                        "mechanism_of_action": t_row["mechanism_of_action"],
+                    }
+                )
+                add_edge(
+                    f"e_{drug_id}_{t_id}",
+                    drug_id,
+                    t_id,
+                    f"TARGETS ({t_row['action_type'] or 'INHIBITOR'})",
+                    "TARGETS",
+                    "#00f2fe",
+                    {"action_type": t_row["action_type"], "mechanism": t_row["mechanism_of_action"]}
+                )
+
     finally:
         conn.close()
+
+    nodes = list(nodes_dict.values())
+    edges = list(edges_dict.values())
 
     return {
         "signal_id": signal_id,
@@ -299,6 +400,8 @@ def get_signal_graph(signal_id: str):
         "edges_count": len(edges),
         "nodes": nodes,
         "edges": edges,
+        "center_node_id": drug_id,
+        "target_disease_id": disease_id
     }
 
 
@@ -535,9 +638,11 @@ def get_signal_timeline(signal_id: str):
 @router.get("/signals/{signal_id}/why-now")
 def get_signal_why_now(signal_id: str):
     """Returns data-grounded rationale for recent score acceleration."""
-    sig = ENGINE.get_signal_by_id(signal_id)
-    if not sig:
+    drug_id, disease_id = parse_signal_id(signal_id)
+    sigs = ENGINE.get_ranked_signals(drug=drug_id, disease=disease_id, limit=1)
+    if not sigs:
         raise HTTPException(status_code=404, detail=f"Signal '{signal_id}' not found")
+    sig = sigs[0]
     
     reasons = [
         f"Candidate hypothesis supported by {sig['evidence']['source_diversity_count']} independent public data sources",
