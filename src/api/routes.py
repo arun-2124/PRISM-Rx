@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, Query, HTTPException, Response
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 
 from src.signals.engine_v2 import SignalEngineV2, get_ranked_signals
 from src.graph.traversal import GraphTraversalEngine
@@ -904,10 +905,28 @@ def get_signal_why_now(signal_id: str):
         conn.close()
 
 
+class CopilotQueryRequest(BaseModel):
+    question: str
+    signal_id: Optional[str] = None
+    comparison_signal_id: Optional[str] = None
+
+
+@router.post("/copilot/query")
+def copilot_query(body: CopilotQueryRequest):
+    """Processes natural language research query using evidence-grounded CopilotEngine."""
+    from src.signals.copilot_engine import CopilotEngine
+    copilot = CopilotEngine(str(DB_PATH))
+    return copilot.process_query(
+        question=body.question,
+        signal_id=body.signal_id,
+        comparison_signal_id=body.comparison_signal_id
+    )
+
+
 @router.get("/copilot/search")
-def copilot_search(q: str = Query(..., description="Query prompt")):
+def copilot_search(q: str = Query(..., description="Query prompt"), signal_id: Optional[str] = Query(None)):
     """Retrieval-grounded copilot search engine."""
     from src.signals.copilot_engine import CopilotEngine
-    engine = CopilotEngine(str(DB_PATH))
-    return engine.process_query(q)
+    copilot = CopilotEngine(str(DB_PATH))
+    return copilot.process_query(question=q, signal_id=signal_id)
 

@@ -65,6 +65,20 @@ export async function fetchSignalWhyNow(id) {
   return res.json();
 }
 
+export async function postCopilotQuery(question, signalId = null, comparisonSignalId = null) {
+  const res = await fetch(`${API_BASE}/copilot/query`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      question,
+      signal_id: signalId,
+      comparison_signal_id: comparisonSignalId,
+    }),
+  });
+  if (!res.ok) throw new Error('Copilot query request failed');
+  return res.json();
+}
+
 export async function fetchDrugs(q = '', limit = 20) {
   const res = await fetch(`${API_BASE}/drugs?q=${encodeURIComponent(q)}&limit=${limit}`);
   if (!res.ok) throw new Error('Failed to search drugs');

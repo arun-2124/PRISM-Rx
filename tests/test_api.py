@@ -133,14 +133,80 @@ class TestFastAPIBackend(unittest.TestCase):
         self.assertEqual(data["classification"]["status"], "ESTABLISHED")
         self.assertTrue(data["classification"]["established_indication"])
 
-    def test_score_invariance_after_status_classification(self):
-        """Verify PRISM Priority Score remains exactly 82.0 for Tg100-801."""
+    def test_copilot_query_explanation(self):
+        """Test POST /api/copilot/query for general signal explanation."""
         sig_id = "DR:CHEMBL403989__D:MONDO_0004967"
-        resp = self.client.get(f"/api/signals/{sig_id}")
+        payload = {
+            "question": "Why is Tg100-801 interesting for acute lymphoblastic leukemia?",
+            "signal_id": sig_id
+        }
+        resp = self.client.post("/api/copilot/query", json=payload)
         self.assertEqual(resp.status_code, 200)
         data = resp.json()
-        self.assertEqual(data["research_priority_score"], 82.0)
-        self.assertEqual(data["category"], "STRONG_RESEARCH_SIGNAL")
+        self.assertEqual(data["signal_id"], sig_id)
+        self.assertEqual(data["prism_score"], 82.0)
+        self.assertEqual(data["signal_status"]["status"], "EMERGING")
+        self.assertIn("32 provenanced evidence records", data["answer"])
+        self.assertEqual(data["provider_mode"], "DETERMINISTIC_EVIDENCE_GROUNDED_MODE")
+
+    def test_copilot_query_comparison(self):
+        """Test POST /api/copilot/query for candidate comparison."""
+        payload = {
+            "question": "Compare Tg100-801 and Metformin.",
+            "signal_id": "DR:CHEMBL403989__D:MONDO_0004967",
+            "comparison_signal_id": "DR:CHEMBL1201__D:MONDO_0005070"
+        }
+        resp = self.client.post("/api/copilot/query", json=payload)
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertIn("candidate_a", data)
+        self.assertIn("candidate_b", data)
+        self.assertIn("COMPARISON MATRIX", data["answer"])
+
+    def test_copilot_query_score_breakdown(self):
+        """Test POST /api/copilot/query for score breakdown explanation."""
+        payload = {
+            "question": "Why did this candidate score 82?",
+            "signal_id": "DR:CHEMBL403989__D:MONDO_0004967"
+        }
+        resp = self.client.post("/api/copilot/query", json=payload)
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertIn("SCORE BREAKDOWN", data["answer"])
+        self.assertIn("score_components", data)
+
+    def test_copilot_query_safety(self):
+        """Test POST /api/copilot/query for safety questions."""
+        payload = {
+            "question": "Are there safety concerns for Tg100-801?",
+            "signal_id": "DR:CHEMBL403989__D:MONDO_0004967"
+        }
+        resp = self.client.post("/api/copilot/query", json=payload)
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertIn("SAFETY INFORMATION", data["answer"])
+
+    def test_copilot_query_clinical_trials(self):
+        """Test POST /api/copilot/query for clinical trial questions."""
+        payload = {
+            "question": "What clinical trials exist?",
+            "signal_id": "DR:CHEMBL403989__D:MONDO_0004967"
+        }
+        resp = self.client.post("/api/copilot/query", json=payload)
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertIn("CLINICAL STUDY REPORTS", data["answer"])
+
+    def test_copilot_query_unavailable_candidate(self):
+        """Test POST /api/copilot/query for unknown invalid candidate ID."""
+        payload = {
+            "question": "Tell me about drug X for disease Y.",
+            "signal_id": "INVALID_DRUG__INVALID_DISEASE"
+        }
+        resp = self.client.post("/api/copilot/query", json=payload)
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertIn("I don't have enough verified evidence in the current PRISM-Rx dataset", data["answer"])
 
 
 if __name__ == "__main__":

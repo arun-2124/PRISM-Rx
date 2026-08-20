@@ -151,6 +151,25 @@ def run_qa_checks():
     except Exception as e:
         print(f"  [FAIL] Export check failed: {e}")
 
+    # 11. Copilot Query Endpoint
+    print("\n11. Testing POST /api/copilot/query (Evidence-Grounded AI Copilot)...")
+    try:
+        t0 = time.time()
+        req = urllib.request.Request(
+            f"{BACKEND_URL}/copilot/query",
+            data=json.dumps({"question": "Why is Tg100-801 interesting for acute lymphoblastic leukemia?", "signal_id": target_signal_id}).encode('utf-8'),
+            headers={"Content-Type": "application/json"}
+        )
+        copilot_res = json.loads(urllib.request.urlopen(req).read())
+        elapsed = (time.time() - t0) * 1000
+        assert copilot_res["prism_score"] == 82.0
+        assert copilot_res["provider_mode"] == "DETERMINISTIC_EVIDENCE_GROUNDED_MODE"
+        print(f"  [PASS] Copilot Query API OK ({elapsed:.1f} ms)")
+        print(f"    - Response Score: {copilot_res['prism_score']}/100 | Status: {copilot_res['signal_status']['label']}")
+        print(f"    - Grounded Provider Mode: {copilot_res['provider_mode']}")
+    except Exception as e:
+        print(f"  [FAIL] Copilot query check failed: {e}")
+
     print("\n" + "=" * 70)
     print("QA VALIDATION COMPLETED SUCCESSFULLY")
     print("=" * 70)
