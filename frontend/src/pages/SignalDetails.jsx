@@ -73,6 +73,17 @@ export default function SignalDetails() {
   const scoreComps = signal.score_components || {};
   const evidence = signal.evidence || {};
 
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    setSaved(isSignalSaved(signal.signal_id));
+  }, [signal.signal_id]);
+
+  const handleToggleBookmark = () => {
+    const newStatus = toggleSaveSignal(signal.signal_id);
+    setSaved(newStatus);
+  };
+
   return (
     <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '32px 24px' }}>
       {/* Back Button */}
@@ -84,10 +95,32 @@ export default function SignalDetails() {
       <div className="glass-card" style={{ padding: '32px', marginBottom: '32px', borderLeft: '4px solid var(--primary-cyan)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '20px' }}>
           <div>
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '12px' }}>
               <span className={`badge ${category === 'STRONG_RESEARCH_SIGNAL' ? 'badge-strong' : category === 'MODERATE_RESEARCH_SIGNAL' ? 'badge-moderate' : 'badge-weak'}`}>
                 {category}
               </span>
+
+              {/* Bookmark Button */}
+              <button
+                onClick={handleToggleBookmark}
+                style={{
+                  background: saved ? 'rgba(0, 242, 254, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+                  border: saved ? '1px solid var(--primary-cyan)' : '1px solid var(--border-color)',
+                  borderRadius: '6px',
+                  padding: '4px 10px',
+                  cursor: 'pointer',
+                  color: saved ? 'var(--primary-cyan)' : 'var(--text-main)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <Bookmark size={16} fill={saved ? 'var(--primary-cyan)' : 'none'} />
+                {saved ? 'SAVED TO PORTFOLIO' : 'SAVE HYPOTHESIS'}
+              </button>
             </div>
 
             <h1 style={{ fontSize: '2.2rem', fontWeight: 800, marginBottom: '8px' }}>

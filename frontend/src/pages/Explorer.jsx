@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Filter, Search, Sliders, Download, RefreshCw } from 'lucide-react';
+import { Filter, Search, Sliders, Download, RefreshCw, Bookmark } from 'lucide-react';
 import { fetchSignals, getExportUrl } from '../api';
+import { getSavedSignalIds, isSignalSaved } from '../utils/savedSignals';
 import SignalCard from '../components/SignalCard';
 
 export default function Explorer() {
   const [signals, setSignals] = useState([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+
+  // Active Tab: 'all' vs 'saved'
+  const [activeTab, setActiveTab] = useState('all');
+  const [savedIds, setSavedIds] = useState(getSavedSignalIds());
 
   // Filters
   const [drug, setDrug] = useState('');
@@ -25,12 +30,12 @@ export default function Explorer() {
       drug,
       disease,
       target,
-      min_score: minScore,
+      min_score: activeTab === 'saved' ? 0 : minScore,
       category,
       clinical_only: clinicalOnly,
       sort_by: sortBy,
-      limit,
-      offset,
+      limit: activeTab === 'saved' ? 200 : limit + offset,
+      offset: activeTab === 'saved' ? 0 : offset,
     })
       .then(data => {
         setSignals(data.signals || []);
@@ -44,14 +49,27 @@ export default function Explorer() {
   };
 
   useEffect(() => {
+    const handleSavedChange = () => {
+      setSavedIds(getSavedSignalIds());
+    };
+    window.addEventListener('prism_saved_signals_changed', handleSavedChange);
+    return () => window.removeEventListener('prism_saved_signals_changed', handleSavedChange);
+  }, []);
+
+  useEffect(() => {
     loadSignals();
-  }, [minScore, category, clinicalOnly, sortBy, offset]);
+  }, [minScore, category, clinicalOnly, sortBy, offset, activeTab]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     setOffset(0);
     loadSignals();
   };
+
+  // Filter signals if saved tab active
+  const displayedSignals = activeTab === 'saved'
+    ? signals.filter(s => savedIds.includes(s.signal_id))
+    : signals.slice(offset, offset + limit);
 
   return (
     <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '32px 24px' }}>
@@ -85,6 +103,47 @@ export default function Explorer() {
             Export JSON
           </a>
         </div>
+      </div>
+
+      {/* Tab Switcher: All Candidate Signals vs Saved Hypotheses */}
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
+        <button
+          onClick={() => { setActiveTab('all'); setOffset(0); }}
+          style={{
+            padding: '10px 20px',
+            borderRadius: '8px',
+            fontWeight: 700,
+            fontSize: '0.9rem',
+            cursor: 'pointer',
+            border: activeTab === 'all' ? '1px solid var(--primary-cyan)' : '1px solid var(--border-color)',
+            background: activeTab === 'all' ? 'rgba(0, 242, 254, 0.15)' : 'rgba(255,255,255,0.03)',
+            color: activeTab === 'all' ? 'var(--primary-cyan)' : 'var(--text-muted)',
+            transition: 'all 0.2s',
+          }}
+        >
+          All Candidate Signals
+        </button>
+
+        <button
+          onClick={() => { setActiveTab('saved'); setOffset(0); }}
+          style={{
+            padding: '10px 20px',
+            borderRadius: '8px',
+            fontWeight: 700,
+            fontSize: '0.9rem',
+            cursor: 'pointer',
+            border: activeTab === 'saved' ? '1px solid var(--primary-cyan)' : '1px solid var(--border-color)',
+            background: activeTab === 'saved' ? 'rgba(0, 242, 254, 0.15)' : 'rgba(255,255,255,0.03)',
+            color: activeTab === 'saved' ? 'var(--primary-cyan)' : 'var(--text-muted)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            transition: 'all 0.2s',
+          }}
+        >
+          <Bookmark size={16} fill={activeTab === 'saved' ? 'var(--primary-cyan)' : 'none'} />
+          Saved Portfolio ({savedIds.length})
+        </button>
       </div>
 
       {/* Main Grid: Sidebar Filters + Signal List */}
@@ -165,7 +224,7 @@ export default function Explorer() {
                 onChange={e => { setCategory(e.target.value); setOffset(0); }}
               >
                 <option value="">All Categories</option>
-                <option value="STRONG_RESEARCH_SIGNAL">STRONG SIGNAL (≥70)</option>
+                <option value="STRONG_RESEARCH_SIGNAL">STRONG SIGNAL (&ge;70)</option>
                 <option value="MODERATE_RESEARCH_SIGNAL">MODERATE SIGNAL (40-69)</option>
                 <option value="WEAK_RESEARCH_SIGNAL">WEAK SIGNAL (20-39)</option>
                 <option value="CONTRADICTED">CONTRADICTED (Warnings)</option>
@@ -197,7 +256,7 @@ export default function Explorer() {
           {/* Top Sort & Count Bar */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', background: 'rgba(255,255,255,0.02)', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
             <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-              Showing <strong>{signals.length}</strong> of <strong>{total}</strong> candidate research signals
+              Showing <strong>{displayedSignals.length}</strong> {activeTab === 'saved' ? 'saved portfolio hypotheses' : `of ${total} candidate research signals`}
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
@@ -222,38 +281,51 @@ export default function Explorer() {
               <RefreshCw size={24} className="spin" style={{ marginBottom: '12px' }} />
               <div>Querying Signal Intelligence Engine V2...</div>
             </div>
-          ) : signals.length === 0 ? (
+          ) : activeTab === 'saved' && displayedSignals.length === 0 ? (
+            <div className="glass-card" style={{ padding: '60px', textAlign: 'center' }}>
+              <Bookmark size={36} color="var(--primary-cyan)" style={{ marginBottom: '12px' }} />
+              <h3 style={{ fontSize: '1.2rem', marginBottom: '8px' }}>No Saved Hypotheses Yet</h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', maxWidth: '480px', margin: '0 auto 16px auto' }}>
+                Click the bookmark icon on any signal card or detail page to save high-priority repurposing hypotheses to your portfolio.
+              </p>
+              <button className="btn-secondary" onClick={() => setActiveTab('all')}>
+                Browse All Candidate Signals
+              </button>
+            </div>
+          ) : displayedSignals.length === 0 ? (
             <div className="glass-card" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
               No research signals matched your specified filter criteria. Try lowering the minimum priority score.
             </div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
-              {signals.map(sig => (
+              {displayedSignals.map(sig => (
                 <SignalCard key={sig.signal_id} signal={sig} />
               ))}
             </div>
           )}
 
-          {/* Pagination Controls */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '24px' }}>
-            <button
-              className="btn-secondary"
-              disabled={offset === 0}
-              onClick={() => setOffset(Math.max(0, offset - limit))}
-            >
-              Previous Page
-            </button>
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-              Page {Math.floor(offset / limit) + 1}
-            </span>
-            <button
-              className="btn-secondary"
-              disabled={offset + limit >= total}
-              onClick={() => setOffset(offset + limit)}
-            >
-              Next Page
-            </button>
-          </div>
+          {/* Pagination Controls (Only for 'all' tab) */}
+          {activeTab === 'all' && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '24px' }}>
+              <button
+                className="btn-secondary"
+                disabled={offset === 0}
+                onClick={() => setOffset(Math.max(0, offset - limit))}
+              >
+                Previous Page
+              </button>
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                Page {Math.floor(offset / limit) + 1}
+              </span>
+              <button
+                className="btn-secondary"
+                disabled={offset + limit >= total}
+                onClick={() => setOffset(offset + limit)}
+              >
+                Next Page
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

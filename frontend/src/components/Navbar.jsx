@@ -1,15 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Dna, Activity, Search, Info, ShieldAlert, Cpu } from 'lucide-react';
+import { Dna, Activity, Search, Info, ShieldAlert, Cpu, Bookmark } from 'lucide-react';
 import { fetchHealth } from '../api';
+import { getSavedSignalIds } from '../utils/savedSignals';
 
 export default function Navbar() {
   const [healthy, setHealthy] = useState(null);
+  const [savedCount, setSavedCount] = useState(0);
 
   useEffect(() => {
     fetchHealth()
       .then(() => setHealthy(true))
       .catch(() => setHealthy(false));
+
+    const updateSavedCount = () => {
+      setSavedCount(getSavedSignalIds().length);
+    };
+
+    updateSavedCount();
+    window.addEventListener('prism_saved_signals_changed', updateSavedCount);
+    return () => window.removeEventListener('prism_saved_signals_changed', updateSavedCount);
   }, []);
 
   return (
@@ -23,7 +33,7 @@ export default function Navbar() {
       padding: '12px 24px',
     }}>
       <div style={{
-        maxWdith: '1400px',
+        maxWidth: '1400px',
         margin: '0 auto',
         display: 'flex',
         alignItems: 'center',
@@ -38,7 +48,6 @@ export default function Navbar() {
             background: 'linear-gradient(135deg, var(--primary-cyan) 0%, var(--accent-purple) 100%)',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'content',
             justifyContent: 'center',
             boxShadow: '0 0 15px rgba(0, 242, 254, 0.4)',
           }}>
@@ -93,6 +102,11 @@ export default function Navbar() {
           >
             <Cpu size={16} />
             Signal Explorer
+            {savedCount > 0 && (
+              <span className="badge badge-strong" style={{ padding: '2px 6px', fontSize: '0.65rem', borderRadius: '10px' }}>
+                {savedCount}
+              </span>
+            )}
           </NavLink>
 
           <NavLink

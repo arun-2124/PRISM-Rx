@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Dna, Layers, ShieldCheck, AlertTriangle, Layers3 } from 'lucide-react';
+import { ArrowRight, Dna, Layers, ShieldCheck, AlertTriangle, Bookmark, Check } from 'lucide-react';
+import { isSignalSaved, toggleSaveSignal } from '../utils/savedSignals';
 
 export default function SignalCard({ signal }) {
   const navigate = useNavigate();
@@ -12,6 +13,28 @@ export default function SignalCard({ signal }) {
   const evidence = signal.evidence || {};
   const paths = signal.supporting_paths || [];
   const primaryTarget = paths[0]?.target?.symbol || 'Multi-Target';
+
+  const [saved, setSaved] = useState(false);
+  const [toast, setToast] = useState(false);
+
+  useEffect(() => {
+    setSaved(isSignalSaved(signal.signal_id));
+
+    const handleSavedChange = () => {
+      setSaved(isSignalSaved(signal.signal_id));
+    };
+
+    window.addEventListener('prism_saved_signals_changed', handleSavedChange);
+    return () => window.removeEventListener('prism_saved_signals_changed', handleSavedChange);
+  }, [signal.signal_id]);
+
+  const handleToggleBookmark = (e) => {
+    e.stopPropagation();
+    const newStatus = toggleSaveSignal(signal.signal_id);
+    setSaved(newStatus);
+    setToast(true);
+    setTimeout(() => setToast(false), 2000);
+  };
 
   const getBadgeClass = (cat) => {
     switch (cat) {
@@ -34,15 +57,38 @@ export default function SignalCard({ signal }) {
   };
 
   return (
-    <div className="glass-card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+    <div className="glass-card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', position: 'relative' }}>
       <div>
-        {/* Top Header: Badges & Score */}
+        {/* Top Header: Badges & Score + Bookmark Button */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
             <span className={`badge ${getBadgeClass(category)}`}>
               {category === 'CONTRADICTED' ? <AlertTriangle size={12} /> : <ShieldCheck size={12} />}
               {getCategoryLabel(category)}
             </span>
+
+            {/* Bookmark Toggle Button */}
+            <button
+              onClick={handleToggleBookmark}
+              title={saved ? 'Remove from Saved Hypotheses' : 'Save Hypothesis to Portfolio'}
+              style={{
+                background: saved ? 'rgba(0, 242, 254, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+                border: saved ? '1px solid var(--primary-cyan)' : '1px solid var(--border-color)',
+                borderRadius: '6px',
+                padding: '4px 8px',
+                cursor: 'pointer',
+                color: saved ? 'var(--primary-cyan)' : 'var(--text-muted)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <Bookmark size={14} fill={saved ? 'var(--primary-cyan)' : 'none'} />
+              {saved ? 'Saved' : 'Save'}
+            </button>
           </div>
 
           <div style={{ textAlign: 'right' }}>
@@ -110,6 +156,30 @@ export default function SignalCard({ signal }) {
         VIEW SIGNAL
         <ArrowRight size={16} />
       </button>
+
+      {/* Toast Feedback */}
+      {toast && (
+        <div style={{
+          position: 'absolute',
+          bottom: '12px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: 'rgba(0, 242, 254, 0.95)',
+          color: '#040914',
+          fontSize: '0.75rem',
+          fontWeight: 700,
+          padding: '4px 12px',
+          borderRadius: '20px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '4px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+          pointerEvents: 'none',
+        }}>
+          <Check size={12} />
+          {saved ? 'Signal saved to portfolio' : 'Signal removed'}
+        </div>
+      )}
     </div>
   );
 }
