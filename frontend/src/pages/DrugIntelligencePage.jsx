@@ -86,7 +86,7 @@ export default function DrugIntelligencePage() {
 
             <div style={{ textAlign: 'right', background: 'rgba(255,255,255,0.03)', padding: '12px 20px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
               <div style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--accent-amber)' }}>
-                {selectedDrug.max_stage || 'PHASE_2'}
+                {selectedDrug.max_clinical_stage || selectedDrug.max_stage || 'PHASE_2'}
               </div>
               <div style={{ fontSize: '0.65rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Highest Clinical Phase</div>
             </div>

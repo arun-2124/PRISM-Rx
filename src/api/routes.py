@@ -503,7 +503,7 @@ def get_signal_clinical_trials(signal_id: str):
     drug_id, _ = parse_signal_id(signal_id)
     conn = get_connection(DB_PATH)
     try:
-        rows = conn.execute("""
+        rows = execute_query(conn, """
             SELECT DISTINCT 
                 cr.id as trial_id, cr.source_name, cr.clinical_stage, cr.trial_phase,
                 cr.trial_status, cr.trial_study_type, cr.trial_primary_purpose,
@@ -531,13 +531,13 @@ def get_signal_evidence(signal_id: str):
     conn = get_connection(DB_PATH)
     try:
         # Warnings
-        warnings = [dict(w) for w in conn.execute(
+        warnings = [dict(w) for w in execute_query(conn, 
             "SELECT warning_type, toxicity_class, country, description, year FROM drug_warnings WHERE drug_id = ?",
             (drug_id,)
         ).fetchall()]
 
         # Evidence rows
-        evidence_rows = [dict(e) for e in conn.execute("""
+        evidence_rows = [dict(e) for e in execute_query(conn, """
             SELECT id, evidence_type, clinical_stage, score, direction_on_trait, publication_ids, source, retrieved_at
             FROM evidence
             WHERE drug_id = ?
@@ -571,13 +571,15 @@ def get_drugs(
             query += " AND (name LIKE ? OR chembl_id = ? OR id = ?)"
             params.extend([f"%{q}%", q, q])
 
-        count_query = f"SELECT COUNT(*) FROM ({query})"
-        total = conn.execute(count_query, params).fetchone()[0]
+        count_query = f"SELECT COUNT(*) FROM ({query}) AS sub"
+        row = execute_query(conn, count_query, list(params)).fetchone()
+        total = list(dict(row).values())[0] if row else 0
 
         query += " ORDER BY name ASC LIMIT ? OFFSET ?"
-        params.extend([limit, offset])
+        exec_params = list(params)
+        exec_params.extend([limit, offset])
 
-        rows = conn.execute(query, params).fetchall()
+        rows = execute_query(conn, query, exec_params).fetchall()
         return {
             "total": total,
             "limit": limit,
@@ -593,19 +595,19 @@ def get_drug_by_id(drug_id: str):
     """Retrieve profile and target mechanisms for a specific drug."""
     conn = get_connection(DB_PATH)
     try:
-        row = conn.execute("SELECT * FROM drugs WHERE id = ? OR chembl_id = ?", (drug_id, drug_id)).fetchone()
+        row = execute_query(conn, "SELECT * FROM drugs WHERE id = ? OR chembl_id = ?", (drug_id, drug_id)).fetchone()
         if not row:
             raise HTTPException(status_code=404, detail=f"Drug '{drug_id}' not found.")
 
         d = dict(row)
-        targets = [dict(r) for r in conn.execute("""
+        targets = [dict(r) for r in execute_query(conn, """
             SELECT t.id, t.approved_symbol, t.approved_name, dt.action_type, dt.mechanism_of_action
             FROM drug_target dt
             JOIN targets t ON dt.target_id = t.id
             WHERE dt.drug_id = ?
         """, (d["id"],)).fetchall()]
 
-        indications = [dict(r) for r in conn.execute("""
+        indications = [dict(r) for r in execute_query(conn, """
             SELECT dis.id, dis.name, dd.max_clinical_stage
             FROM drug_disease dd
             JOIN diseases dis ON dd.disease_id = dis.id
@@ -634,13 +636,15 @@ def get_diseases(
             query += " AND (name LIKE ? OR source_id = ? OR id = ?)"
             params.extend([f"%{q}%", q, q])
 
-        count_query = f"SELECT COUNT(*) FROM ({query})"
-        total = conn.execute(count_query, params).fetchone()[0]
+        count_query = f"SELECT COUNT(*) FROM ({query}) AS sub"
+        row = execute_query(conn, count_query, list(params)).fetchone()
+        total = list(dict(row).values())[0] if row else 0
 
         query += " ORDER BY name ASC LIMIT ? OFFSET ?"
-        params.extend([limit, offset])
+        exec_params = list(params)
+        exec_params.extend([limit, offset])
 
-        rows = conn.execute(query, params).fetchall()
+        rows = execute_query(conn, query, exec_params).fetchall()
         return {
             "total": total,
             "limit": limit,
@@ -706,10 +710,8 @@ def get_signal_timeline(signal_id: str):
     scientific_events = []
     snapshot_event = None
     try:
-        cursor = conn.cursor()
-        
         # 1. Clinical Trials with start dates
-        trials = cursor.execute("""
+        trials = execute_query(conn, """
             SELECT DISTINCT cr.id, cr.source_name, cr.trial_phase, cr.trial_status, cr.trial_start_date, cr.url
             FROM evidence e
             JOIN clinical_reports cr ON e.clinical_report_id = cr.id
@@ -733,7 +735,7 @@ def get_signal_timeline(signal_id: str):
             })
 
         # 2. Safety Warnings with dates/years
-        warnings = cursor.execute("""
+        warnings = execute_query(conn, """
             SELECT warning_type, toxicity_class, country, year, source
             FROM drug_warnings
             WHERE drug_id = ? AND year IS NOT NULL
@@ -756,7 +758,7 @@ def get_signal_timeline(signal_id: str):
             })
 
         # 3. Evidence Events (bioRxiv / preprints)
-        ee_rows = cursor.execute("""
+        ee_rows = execute_query(conn, """
             SELECT id, source, event_type, publication_date, title, evidence_strength, url
             FROM evidence_events
             WHERE drug_id = ? OR disease_id = ?
@@ -781,25 +783,29 @@ def get_signal_timeline(signal_id: str):
         scientific_events.sort(key=lambda x: str(x.get("date") or ""))
 
         # 4. Open Targets & ChEMBL Datasets Ingestion Snapshot Date (Separated from scientific events)
-        ev_snap = cursor.execute("""
+        ev_snap_row = execute_query(conn, """
             SELECT MAX(retrieved_at) as last_retrieved, COUNT(*) as cnt
             FROM evidence
             WHERE drug_id = ?
         """, (drug_id,)).fetchone()
         
-        if ev_snap and ev_snap[1] > 0 and ev_snap[0]:
-            snap_date = str(ev_snap[0])[:10]
-            snapshot_event = {
-                "id": f"SNAPSHOT:{drug_id}",
-                "date": snap_date,
-                "type": "DATASET_INGESTION",
-                "title": f"{ev_snap[1]} candidate-associated evidence records indexed",
-                "source": "Open Targets 26.06",
-                "record_id": f"SNAPSHOT:{drug_id}",
-                "evidence_score": 1.0,
-                "provenance": "VERIFIED MEDBASE.DB",
-                "url": None
-            }
+        if ev_snap_row:
+            snap_dict = dict(ev_snap_row)
+            last_retrieved = snap_dict.get("last_retrieved")
+            cnt_val = snap_dict.get("cnt", 0)
+            if cnt_val and cnt_val > 0 and last_retrieved:
+                snap_date = str(last_retrieved)[:10]
+                snapshot_event = {
+                    "id": f"SNAPSHOT:{drug_id}",
+                    "date": snap_date,
+                    "type": "DATASET_INGESTION",
+                    "title": f"{cnt_val} candidate-associated evidence records indexed",
+                    "source": "Open Targets 26.06 Snapshot",
+                    "record_id": f"SNAPSHOT:{drug_id}",
+                    "evidence_score": None,
+                    "provenance": "VERIFIED MEDBASE.DB",
+                    "url": "https://platform.opentargets.org"
+                }
 
         all_events = list(scientific_events)
         if snapshot_event:
@@ -834,13 +840,13 @@ def get_signal_why_now(signal_id: str):
         cursor = conn.cursor()
 
         # Audit Independent Sources
-        ot_cnt = cursor.execute("SELECT COUNT(*) FROM evidence WHERE drug_id = ?", (drug_id,)).fetchone()[0]
-        chembl_cnt = cursor.execute("SELECT COUNT(*) FROM drug_target WHERE drug_id = ?", (drug_id,)).fetchone()[0]
-        trials_cnt = cursor.execute("""
+        ot_cnt = list(dict(execute_query(conn, "SELECT COUNT(*) FROM evidence WHERE drug_id = ?", (drug_id,)).fetchone()).values())[0]
+        chembl_cnt = list(dict(execute_query(conn, "SELECT COUNT(*) FROM drug_target WHERE drug_id = ?", (drug_id,)).fetchone()).values())[0]
+        trials_cnt = list(dict(execute_query(conn, """
             SELECT COUNT(DISTINCT cr.id) FROM evidence e
             JOIN clinical_reports cr ON e.clinical_report_id = cr.id
             WHERE e.drug_id = ?
-        """, (drug_id,)).fetchone()[0]
+        """, (drug_id,)).fetchone()).values())[0]
 
         independent_sources_list = []
         if ot_cnt > 0: independent_sources_list.append("Open Targets Platform 26.06")
@@ -849,16 +855,16 @@ def get_signal_why_now(signal_id: str):
         source_div = max(1, len(independent_sources_list))
 
         # Check dated scientific events (publications + trials with dates)
-        recent_pub_cnt = cursor.execute("""
+        recent_pub_cnt = list(dict(execute_query(conn, """
             SELECT COUNT(*) FROM evidence_events
             WHERE drug_id = ? OR disease_id = ?
-        """, (drug_id, disease_id)).fetchone()[0]
+        """, (drug_id, disease_id)).fetchone()).values())[0]
 
-        dated_trials_cnt = cursor.execute("""
+        dated_trials_cnt = list(dict(execute_query(conn, """
             SELECT COUNT(*) FROM evidence e
             JOIN clinical_reports cr ON e.clinical_report_id = cr.id
             WHERE e.drug_id = ? AND cr.trial_start_date IS NOT NULL AND cr.trial_start_date != ''
-        """, (drug_id,)).fetchone()[0]
+        """, (drug_id,)).fetchone()).values())[0]
 
         dated_events_total = recent_pub_cnt + dated_trials_cnt
 
