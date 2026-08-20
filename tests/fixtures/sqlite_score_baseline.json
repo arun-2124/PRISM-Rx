@@ -1,11 +1,13 @@
 {
   "DR:CHEMBL403989__D:MONDO_0004967": {
     "signal_id": "DR:CHEMBL403989__D:MONDO_0004967",
+    "drug_id": "DR:CHEMBL403989",
     "drug_name": "Tg100-801",
+    "disease_id": "D:MONDO_0004967",
     "disease_name": "acute lymphoblastic leukemia",
     "prism_score": 82.0,
     "category": "STRONG_RESEARCH_SIGNAL",
-    "status": "EMERGING",
+    "status": "EMERGING SIGNAL",
     "score_components": {
       "target_disease_pts": 30.0,
       "drug_target_pts": 13.5,
@@ -23,11 +25,13 @@
   },
   "DR:CHEMBL473159__D:EFO_0005762": {
     "signal_id": "DR:CHEMBL473159__D:EFO_0005762",
+    "drug_id": "DR:CHEMBL473159",
     "drug_name": "Phloroglucinol",
+    "disease_id": "D:EFO_0005762",
     "disease_name": "neuropathic pain",
     "prism_score": 89.5,
     "category": "STRONG_RESEARCH_SIGNAL",
-    "status": "EMERGING",
+    "status": "EMERGING SIGNAL",
     "score_components": {
       "target_disease_pts": 30.0,
       "drug_target_pts": 12.0,
@@ -45,11 +49,13 @@
   },
   "DR:CHEMBL1059__D:EFO_0010282": {
     "signal_id": "DR:CHEMBL1059__D:EFO_0010282",
+    "drug_id": "DR:CHEMBL1059",
     "drug_name": "Pregabalin",
+    "disease_id": "D:EFO_0010282",
     "disease_name": "gastrointestinal disease",
     "prism_score": 88.0,
     "category": "STRONG_RESEARCH_SIGNAL",
-    "status": "EMERGING",
+    "status": "EMERGING SIGNAL",
     "score_components": {
       "target_disease_pts": 30.0,
       "drug_target_pts": 10.5,
@@ -65,13 +71,15 @@
       "evidence_tier": "HIGH"
     }
   },
-  "DR:CHEMBL1201__D:EFO_0003015": {
-    "signal_id": "DR:CHEMBL1201__D:EFO_0003015",
+  "DR:CHEMBL1201__D:MONDO_0004992": {
+    "signal_id": "DR:CHEMBL1201__D:MONDO_0004992",
+    "drug_id": "DR:CHEMBL1201",
     "drug_name": "Metformin",
-    "disease_name": "aggressive behavior",
+    "disease_id": "D:MONDO_0004992",
+    "disease_name": "cancer",
     "prism_score": 28.0,
     "category": "CONTRADICTED",
-    "status": "EMERGING",
+    "status": "EMERGING SIGNAL",
     "score_components": {
       "target_disease_pts": 30.0,
       "drug_target_pts": 13.5,
