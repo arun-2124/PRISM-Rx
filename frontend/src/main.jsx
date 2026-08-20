@@ -5,7 +5,7 @@ import './index.css'
 import App from './App.jsx'
 
 // Register PWA Service Worker
-if ('serviceWorker' in navigator && import.meta.env.PROD) {
+if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
       .then((reg) => console.log('PRISM-Rx ServiceWorker registered:', reg.scope))
