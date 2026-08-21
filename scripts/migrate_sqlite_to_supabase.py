@@ -64,7 +64,8 @@ def load_env_file():
                 if line and not line.startswith("#") and "=" in line:
                     k, v = line.split("=", 1)
                     k, v = k.strip(), v.strip().strip("'\"")
-                    os.environ[k] = v
+                    if k not in os.environ or not os.environ[k]:
+                        os.environ[k] = v
 
 def migrate_data(dry_run: bool = False) -> bool:
     load_env_file()

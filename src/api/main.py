@@ -7,11 +7,33 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from src.api.routes import router
 
+from src.database.connection import get_backend_type, get_db_connection
+
 app = FastAPI(
     title="PRISM-Rx API",
     description="Real-Time Biotech Arbitrage Engine for Drug Repurposing Signals",
     version="2.0.0",
 )
+
+@app.on_event("startup")
+def startup_diagnostic():
+    backend_type = get_backend_type()
+    print("=" * 60)
+    print("PRISM-Rx FASTAPI PRODUCTION STARTUP DIAGNOSTIC")
+    print(f"DATABASE_BACKEND: {backend_type}")
+    if backend_type == "postgres":
+        raw_url = os.getenv("SUPABASE_DATABASE_URL") or os.getenv("DATABASE_URL") or ""
+        sanitized_host = raw_url.split("@")[-1].split("/")[0] if "@" in raw_url else "supabase_postgres"
+        print(f"Target Database Host: {sanitized_host}")
+        try:
+            b, conn = get_db_connection()
+            print("Database Connectivity: CONNECTED (Supabase PostgreSQL)")
+            conn.close()
+        except Exception as e:
+            print(f"Database Connectivity: FAILED ({e})")
+    else:
+        print(f"Database Mode: SQLite ({os.getenv('SQLITE_DB_PATH', 'data/unified/medbase.db')})")
+    print("=" * 60)
 
 # Production CORS Configuration
 allowed_origins_env = os.getenv("PRISM_FRONTEND_ORIGIN", "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173")

@@ -44,12 +44,56 @@ def parse_signal_id(signal_id: str) -> Tuple[str, str]:
 
 @router.get("/health")
 def get_health():
-    """Health check endpoint."""
+    """Health check endpoint supporting both PostgreSQL and SQLite backends."""
+    backend_type = get_backend_type()
+
+    if backend_type == "postgres":
+        try:
+            conn = get_connection(DB_PATH)
+            cur = execute_query(conn, "SELECT COUNT(*) FROM drugs")
+            row = cur.fetchone()
+            drugs_cnt = list(dict(row).values())[0] if row else 0
+            conn.close()
+
+            raw_url = os.getenv("SUPABASE_DATABASE_URL") or os.getenv("DATABASE_URL") or ""
+            sanitized_host = "supabase_postgres"
+            if "@" in raw_url:
+                sanitized_host = raw_url.split("@")[-1].split("/")[0]
+
+            return {
+                "status": "healthy",
+                "database": {
+                    "backend": "postgres",
+                    "connected": True,
+                    "host": sanitized_host,
+                    "verified_drugs_count": drugs_cnt,
+                },
+                "engine": "SignalEngineV2",
+                "version": "2.0.0",
+            }
+        except Exception as e:
+            return Response(
+                content=json.dumps({
+                    "status": "unhealthy",
+                    "database": {
+                        "backend": "postgres",
+                        "connected": False,
+                        "error": str(e),
+                    },
+                    "engine": "SignalEngineV2",
+                    "version": "2.0.0",
+                }),
+                status_code=503,
+                media_type="application/json"
+            )
+
+    # SQLite Health Check (Local Development / Fallback)
     db_exists = DB_PATH.exists()
     db_size = round(DB_PATH.stat().st_size / 1024 / 1024, 2) if db_exists else 0.0
     return {
         "status": "healthy" if db_exists else "unhealthy",
         "database": {
+            "backend": "sqlite",
             "path": str(DB_PATH),
             "exists": db_exists,
             "size_mb": db_size,

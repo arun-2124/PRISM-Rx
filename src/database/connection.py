@@ -21,21 +21,27 @@ def get_db_connection() -> Tuple[str, Any]:
     """Returns tuple of (backend_type, conn).
     
     If DATABASE_BACKEND=postgres, connects to Supabase PostgreSQL.
-    Otherwise defaults to SQLite.
+    If connection fails or connection URL is missing, raises RuntimeError.
+    Otherwise defaults to SQLite for local development.
     """
     backend = get_backend_type()
     if backend == "postgres":
         db_url = os.getenv("SUPABASE_DATABASE_URL") or os.getenv("DATABASE_URL") or os.getenv("POSTGRES_DB_URL")
-        if db_url:
-            try:
-                import psycopg
-                from psycopg.rows import dict_row
-                conn = psycopg.connect(db_url, row_factory=dict_row)
-                return "postgres", conn
-            except Exception as e:
-                print(f"[WARNING] PostgreSQL connection failed ({e}). Falling back to SQLite.")
-        else:
-            print("[WARNING] DATABASE_BACKEND=postgres requested but no connection URL provided. Falling back to SQLite.")
+        if not db_url:
+            raise RuntimeError(
+                "[DATABASE ERROR] DATABASE_BACKEND=postgres is set, but no connection URL was provided. "
+                "Please configure SUPABASE_DATABASE_URL or DATABASE_URL in your environment."
+            )
+        try:
+            import psycopg
+            from psycopg.rows import dict_row
+            conn = psycopg.connect(db_url, row_factory=dict_row)
+            return "postgres", conn
+        except Exception as e:
+            raise RuntimeError(
+                f"[DATABASE ERROR] DATABASE_BACKEND=postgres is set, but failed to connect to PostgreSQL: {e}. "
+                "Verify host connectivity and database credentials."
+            )
 
     # Default SQLite Connection
     db_path = os.getenv("SQLITE_DB_PATH", SQLITE_DB_DEFAULT)
