@@ -48,15 +48,16 @@ def adapt_sql(query: str, backend: Optional[str] = None) -> str:
     b = backend or get_backend_type()
     if b == "postgres":
         return query.replace("?", "%s")
-    return query
+    return query.replace("%s", "?")
 
 def execute_query(conn: Any, sql: str, params: Any = ()) -> Any:
     """Executes a query adaptively on SQLite or PostgreSQL connection."""
-    backend = get_backend_type()
-    adapted = adapt_sql(sql, backend)
-    if backend == "postgres":
+    is_sqlite = isinstance(conn, sqlite3.Connection)
+    if is_sqlite:
+        adapted = sql.replace("%s", "?")
+        return conn.execute(adapted, params)
+    else:
+        adapted = adapt_sql(sql, "postgres")
         cur = conn.cursor()
         cur.execute(adapted, params)
         return cur
-    else:
-        return conn.execute(adapted, params)

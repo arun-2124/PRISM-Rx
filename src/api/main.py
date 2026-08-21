@@ -1,6 +1,7 @@
 import os
 from scripts.migrate_sqlite_to_supabase import load_env_file
 load_env_file()
+os.environ.setdefault("DATABASE_BACKEND", "postgres")
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware

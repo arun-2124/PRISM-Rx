@@ -112,12 +112,22 @@ class SignalEngineV2:
             params = []
 
             if drug:
-                query += " AND (d.name LIKE ? OR d.id = ? OR d.chembl_id = ?)"
-                params.extend([f"%{drug}%", drug, drug])
+                clean_chembl = drug.replace("DR:", "")
+                if drug.startswith("DR:") or drug.startswith("CHEMBL"):
+                    query += " AND (d.id = ? OR d.chembl_id = ?)"
+                    params.extend([drug if drug.startswith("DR:") else f"DR:{drug}", clean_chembl])
+                else:
+                    query += " AND (d.name LIKE ? OR d.id = ? OR d.chembl_id = ?)"
+                    params.extend([f"%{drug}%", drug, clean_chembl])
 
             if disease:
-                query += " AND (dis.name LIKE ? OR dis.id = ? OR dis.source_id = ?)"
-                params.extend([f"%{disease}%", disease, disease])
+                clean_src = disease.replace("D:", "")
+                if disease.startswith("D:") or disease.startswith("MONDO_") or disease.startswith("EFO_"):
+                    query += " AND (dis.id = ? OR dis.source_id = ?)"
+                    params.extend([disease if disease.startswith("D:") else f"D:{disease}", clean_src])
+                else:
+                    query += " AND (dis.name LIKE ? OR dis.id = ? OR dis.source_id = ?)"
+                    params.extend([f"%{disease}%", disease, clean_src])
 
             query += " ORDER BY td.score DESC LIMIT ?"
             params.append(limit * 20)

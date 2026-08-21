@@ -280,7 +280,7 @@ def get_signal_graph(
 ):
     """Retrieve 2-hop interactive graph topology (nodes, edges, layout properties)."""
     drug_id, disease_id = parse_signal_id(signal_id)
-    sigs = ENGINE.get_ranked_signals(drug=drug_id, disease=disease_id, limit=1)
+    sigs = ENGINE.get_ranked_signals(drug=drug_id, disease=disease_id, min_score=0, limit=1)
 
     if not sigs:
         raise HTTPException(status_code=404, detail="Candidate signal not found for graph generation.")
@@ -715,7 +715,7 @@ def get_signal_timeline(signal_id: str):
             SELECT DISTINCT cr.id, cr.source_name, cr.trial_phase, cr.trial_status, cr.trial_start_date, cr.url
             FROM evidence e
             JOIN clinical_reports cr ON e.clinical_report_id = cr.id
-            WHERE e.drug_id = ? AND cr.trial_start_date IS NOT NULL AND cr.trial_start_date != ''
+            WHERE e.drug_id = ? AND cr.trial_start_date IS NOT NULL
             ORDER BY cr.trial_start_date ASC
             LIMIT 10
         """, (drug_id,)).fetchall()

@@ -131,8 +131,11 @@ def migrate_data(dry_run: bool = False) -> bool:
         print("\n[STEP 1/4] Applying PostgreSQL DDL Schema from scripts/create_postgres_schema.sql...")
         with open(SCHEMA_SQL_PATH, "r") as f:
             ddl_sql = f.read()
-        cur_pg.execute(ddl_sql)
-        conn_pg.commit()
+        for stmt in ddl_sql.split(";"):
+            stmt_clean = stmt.strip()
+            if stmt_clean:
+                cur_pg.execute(stmt_clean)
+                conn_pg.commit()
         print("[SUCCESS] PostgreSQL DDL schema applied successfully.")
 
         # 3. Data Migration Table-by-Table
@@ -166,14 +169,15 @@ def migrate_data(dry_run: bool = False) -> bool:
                 batch.append(clean_row)
                 if len(batch) >= BATCH_SIZE:
                     cur_pg.executemany(insert_sql, batch)
+                    conn_pg.commit()
                     inserted_count += len(batch)
                     batch = []
 
             if batch:
                 cur_pg.executemany(insert_sql, batch)
+                conn_pg.commit()
                 inserted_count += len(batch)
 
-            conn_pg.commit()
             print(f" DONE ({inserted_count:,} rows inserted)")
 
         t_elapsed = time.time() - t_start

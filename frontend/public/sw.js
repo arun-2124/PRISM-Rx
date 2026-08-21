@@ -34,6 +34,16 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
+  // DO NOT INTERCEPT VITE DEV SERVER MODULES & INTERNAL HMR ENDPOINTS
+  if (
+    url.pathname.startsWith('/@') ||
+    url.pathname.startsWith('/src/') ||
+    url.pathname.includes('node_modules') ||
+    url.pathname.includes('.vite')
+  ) {
+    return; // Pass directly to Vite dev server
+  }
+
   // DO NOT CACHE API REQUESTS or Database Files
   if (url.pathname.startsWith('/api') || url.pathname.endsWith('.db')) {
     event.respondWith(
@@ -69,7 +79,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Cache-First with Network Fallback for Assets
+  // Cache-First with Network Fallback for Static Production Assets
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
