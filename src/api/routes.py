@@ -217,8 +217,16 @@ def get_signal_by_id(signal_id: str):
     """Retrieve detailed research view for a single candidate signal."""
     drug_id, disease_id = parse_signal_id(signal_id)
     signals = ENGINE.get_ranked_signals(drug=drug_id, disease=disease_id, limit=5)
+    if not signals and drug_id and disease_id:
+        clean_drug = drug_id.replace("DR:", "")
+        clean_dis = disease_id.replace("D:", "")
+        signals = ENGINE.get_ranked_signals(drug=clean_drug, disease=clean_dis, limit=5)
 
     if not signals:
+        service = get_shared_intel_service()
+        intel = service.get_signal_intelligence_detail(signal_id)
+        if intel:
+            return intel
         raise HTTPException(status_code=404, detail=f"Signal with ID '{signal_id}' not found.")
 
     sig = signals[0]

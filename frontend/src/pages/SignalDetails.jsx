@@ -33,8 +33,10 @@ export default function SignalDetails() {
     setLiveLit(null);
     setLiveError(null);
 
+    const safeId = decodeURIComponent(id);
+
     Promise.all([
-      fetchSignalById(id),
+      fetchSignalById(id).catch(() => fetchSignalIntelligenceDetail(id)),
       fetchSignalGraph(id).catch(() => null),
       fetchSignalTrials(id).catch(() => null),
       fetchSignalEvidence(id).catch(() => null),
@@ -43,7 +45,13 @@ export default function SignalDetails() {
       fetchSignalIntelligenceDetail(id).catch(() => null),
     ])
       .then(([sigRes, graphRes, trialsRes, evRes, timeRes, whyRes, intelRes]) => {
-        setSignal(sigRes);
+        const activeSignal = sigRes || intelRes;
+        if (!activeSignal) {
+          setError(`Signal '${safeId}' not found in database.`);
+          setLoading(false);
+          return;
+        }
+        setSignal(activeSignal);
         setGraphData(graphRes);
         setTrialsData(trialsRes);
         setEvidenceData(evRes);
@@ -54,7 +62,7 @@ export default function SignalDetails() {
       })
       .catch(err => {
         console.error('Signal details fetch error:', err);
-        setError(err.message);
+        setError(err.message || 'Error loading signal details.');
         setLoading(false);
       });
   }, [id]);
@@ -100,7 +108,7 @@ export default function SignalDetails() {
   if (error || !signal) {
     return (
       <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '60px 24px' }}>
-        <button className="btn-secondary" onClick={() => navigate('/signals')} style={{ marginBottom: '16px' }}>
+        <button className="btn-secondary" onClick={() => navigate('/signal-intelligence')} style={{ marginBottom: '16px' }}>
           <ArrowLeft size={16} /> Back to Explorer
         </button>
         <div className="glass-card" style={{ padding: '40px', color: 'var(--accent-rose)' }}>
@@ -134,7 +142,7 @@ export default function SignalDetails() {
   return (
     <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '32px 24px' }}>
       {/* Back Button */}
-      <button className="btn-secondary" onClick={() => navigate('/signals')} style={{ marginBottom: '24px' }}>
+      <button className="btn-secondary" onClick={() => navigate('/signal-intelligence')} style={{ marginBottom: '24px' }}>
         <ArrowLeft size={16} /> Back to Signal Explorer
       </button>
 

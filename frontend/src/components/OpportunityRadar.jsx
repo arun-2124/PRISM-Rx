@@ -74,17 +74,86 @@ export default function OpportunityRadar({ candidateSignals = [] }) {
         <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: '1px', background: 'rgba(255, 255, 255, 0.08)', borderStyle: 'dashed' }} />
 
         {/* Quadrant Labels */}
-        <div style={{ position: 'absolute', top: '16px', right: '20px', fontSize: '0.75rem', fontWeight: 800, color: '#34d399', letterSpacing: '0.05em', background: 'rgba(16, 185, 129, 0.1)', padding: '4px 10px', borderRadius: '6px', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
-          PRIORITY OPPORTUNITIES (HIGH NOVELTY / HIGH EVIDENCE)
+        {/* Top-Left: EARLY LATENT SIGNALS */}
+        <div style={{
+          position: 'absolute',
+          top: '16px',
+          left: '16px',
+          padding: '8px 12px',
+          borderRadius: '8px',
+          background: 'rgba(157, 78, 221, 0.12)',
+          border: '1px solid rgba(157, 78, 221, 0.3)',
+          pointerEvents: 'none',
+          zIndex: 1
+        }}>
+          <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#9d4edd', letterSpacing: '0.05em' }}>
+            EARLY LATENT SIGNALS
+          </div>
+          <div style={{ fontSize: '0.68rem', color: '#cbd5e1', marginTop: '2px' }}>
+            High novelty / lower evidence
+          </div>
         </div>
-        <div style={{ position: 'absolute', top: '16px', left: '20px', fontSize: '0.75rem', fontWeight: 800, color: 'var(--accent-purple)', letterSpacing: '0.05em', background: 'rgba(157, 78, 221, 0.1)', padding: '4px 10px', borderRadius: '6px', border: '1px solid rgba(157, 78, 221, 0.3)' }}>
-          EARLY LATENT SIGNALS (HIGH NOVELTY / LOW EVIDENCE)
+
+        {/* Top-Right: PRIORITY OPPORTUNITIES */}
+        <div style={{
+          position: 'absolute',
+          top: '16px',
+          right: '16px',
+          padding: '8px 12px',
+          borderRadius: '8px',
+          background: 'rgba(16, 185, 129, 0.12)',
+          border: '1px solid rgba(16, 185, 129, 0.3)',
+          textAlign: 'right',
+          pointerEvents: 'none',
+          zIndex: 1
+        }}>
+          <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#34d399', letterSpacing: '0.05em' }}>
+            PRIORITY OPPORTUNITIES
+          </div>
+          <div style={{ fontSize: '0.68rem', color: '#cbd5e1', marginTop: '2px' }}>
+            High novelty / high evidence
+          </div>
         </div>
-        <div style={{ position: 'absolute', bottom: '16px', right: '20px', fontSize: '0.75rem', fontWeight: 800, color: 'var(--primary-cyan)', letterSpacing: '0.05em', background: 'rgba(0, 242, 254, 0.1)', padding: '4px 10px', borderRadius: '6px', border: '1px solid rgba(0, 242, 254, 0.3)' }}>
-          ESTABLISHED CANDIDATES (LOW NOVELTY / HIGH EVIDENCE)
+
+        {/* Bottom-Left: LOW PRIORITY */}
+        <div style={{
+          position: 'absolute',
+          bottom: '16px',
+          left: '16px',
+          padding: '8px 12px',
+          borderRadius: '8px',
+          background: 'rgba(255, 255, 255, 0.04)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          pointerEvents: 'none',
+          zIndex: 1
+        }}>
+          <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#94a3b8', letterSpacing: '0.05em' }}>
+            LOW PRIORITY
+          </div>
+          <div style={{ fontSize: '0.68rem', color: '#64748b', marginTop: '2px' }}>
+            Lower novelty / lower evidence
+          </div>
         </div>
-        <div style={{ position: 'absolute', bottom: '16px', left: '20px', fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-dim)', letterSpacing: '0.05em', background: 'rgba(255, 255, 255, 0.03)', padding: '4px 10px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
-          LOW PRIORITY CANDIDATES
+
+        {/* Bottom-Right: ESTABLISHED CANDIDATES */}
+        <div style={{
+          position: 'absolute',
+          bottom: '16px',
+          right: '16px',
+          padding: '8px 12px',
+          borderRadius: '8px',
+          background: 'rgba(0, 242, 254, 0.12)',
+          border: '1px solid rgba(0, 242, 254, 0.3)',
+          textAlign: 'right',
+          pointerEvents: 'none',
+          zIndex: 1
+        }}>
+          <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#00f2fe', letterSpacing: '0.05em' }}>
+            ESTABLISHED CANDIDATES
+          </div>
+          <div style={{ fontSize: '0.68rem', color: '#cbd5e1', marginTop: '2px' }}>
+            Lower novelty / high evidence
+          </div>
         </div>
 
         {/* Scatter Nodes */}
