@@ -7,7 +7,7 @@ import csv
 import io
 import sqlite3
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 from fastapi import APIRouter, Query, HTTPException, Response
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
