@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Tuple
 
-from src.database.connection import get_db_connection, adapt_sql, get_backend_type
+from src.database.connection import get_db_connection, adapt_sql, get_backend_type, execute_query
 
 DB_PATH = Path("data/unified/medbase.db")
 
