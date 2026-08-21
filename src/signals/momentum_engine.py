@@ -3,6 +3,7 @@ Momentum Engine Module for PRISM-Rx Signal Intelligence
 Calculates evidence momentum, growth rate, acceleration, and direction.
 """
 
+import time
 from typing import Dict, Any, List, Optional
 from src.database.connection import execute_query
 
@@ -10,11 +11,20 @@ from src.database.connection import execute_query
 class MomentumEngine:
     """Calculates evidence growth rate, momentum score (0-100), and direction."""
 
+    _cache = {}
+    _cache_ttl = 60.0
+
     def __init__(self, conn: Any):
         self.conn = conn
 
     def calculate_momentum(self, drug_id: str, disease_id: str) -> Dict[str, Any]:
         """Calculates evidence acceleration, percentage change, and momentum score."""
+        cache_key = f"{drug_id}:{disease_id}"
+        if cache_key in self._cache:
+            val, ts = self._cache[cache_key]
+            if time.time() - ts < self._cache_ttl:
+                return val
+
         clean_drug_id = drug_id.replace("DR:", "") if drug_id.startswith("DR:") else drug_id
         clean_disease_id = disease_id.replace("D:", "") if disease_id.startswith("D:") else disease_id
 
@@ -95,7 +105,7 @@ class MomentumEngine:
         else:
             direction = "INSUFFICIENT_DATA"
 
-        return {
+        res = {
             "momentum_score": momentum_score,
             "momentum_percent_change": percent_change,
             "momentum_direction": direction,
@@ -104,3 +114,5 @@ class MomentumEngine:
             "baseline_activity_count": baseline_total,
             "status": "CALCULATED"
         }
+        self._cache[cache_key] = (res, time.time())
+        return res

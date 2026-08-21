@@ -3,6 +3,7 @@ Why Now Engine Module for PRISM-Rx Signal Intelligence
 Generates structured facts and deterministic explanations of why a signal is emerging now.
 """
 
+import time
 from typing import Dict, Any, List, Optional
 from src.database.connection import execute_query
 
@@ -10,11 +11,20 @@ from src.database.connection import execute_query
 class WhyNowEngine:
     """Generates structured database-grounded explanations for why a signal is important NOW."""
 
+    _cache = {}
+    _cache_ttl = 60.0
+
     def __init__(self, conn: Any):
         self.conn = conn
 
     def generate_why_now(self, drug_id: str, disease_id: str, drug_name: str = "", disease_name: str = "") -> Dict[str, Any]:
         """Returns structured facts and deterministic explanation grounded strictly in database records."""
+        cache_key = f"{drug_id}:{disease_id}:{drug_name}:{disease_name}"
+        if cache_key in self._cache:
+            val, ts = self._cache[cache_key]
+            if time.time() - ts < self._cache_ttl:
+                return val
+
         clean_drug_id = drug_id.replace("DR:", "") if drug_id.startswith("DR:") else drug_id
         clean_disease_id = disease_id.replace("D:", "") if disease_id.startswith("D:") else disease_id
 
@@ -90,7 +100,7 @@ class WhyNowEngine:
         else:
             explanation = f"Target pathway evidence and computational research priority support '{d_name}' for '{dis_name}', establishing a candidate latent signal for early investigation."
 
-        return {
+        res = {
             "drug_id": drug_id,
             "disease_id": disease_id,
             "why_now_factors": facts,
@@ -102,3 +112,5 @@ class WhyNowEngine:
                 "independent_sources_count": source_cnt
             }
         }
+        self._cache[cache_key] = (res, time.time())
+        return res

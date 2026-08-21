@@ -947,6 +947,16 @@ def copilot_search(q: str = Query(..., description="Query prompt"), signal_id: O
 # PRISM SIGNAL INTELLIGENCE REST ENDPOINTS
 # ==============================================================================
 
+_shared_intel_service = None
+
+def get_shared_intel_service():
+    global _shared_intel_service
+    if _shared_intel_service is None:
+        from src.signals.signal_intelligence_service import SignalIntelligenceService
+        _shared_intel_service = SignalIntelligenceService()
+    return _shared_intel_service
+
+
 @router.get("/signal-intelligence/emerging")
 def get_emerging_signals(
     limit: int = Query(20, ge=1, le=100),
@@ -956,12 +966,11 @@ def get_emerging_signals(
     sort_by: str = Query("emerging_priority")
 ):
     """Returns dynamic KPI metrics, top emerging radar signals, and filtered candidate intelligence list."""
-    from src.signals.signal_intelligence_service import SignalIntelligenceService
-    service = SignalIntelligenceService()
+    service = get_shared_intel_service()
     
     kpis = service.get_dashboard_kpis()
     radar = service.get_emerging_radar_signals(limit=10)
-    raw_signals = service.engine_v2.get_ranked_signals(limit=50, min_score=min_prism_score)
+    raw_signals = service.engine_v2.get_ranked_signals(limit=min(25, limit + 5), min_score=min_prism_score)
     enriched = [service.enrich_signal(s) for s in raw_signals]
     
     # Filter
@@ -992,8 +1001,7 @@ def get_emerging_signals(
 @router.get("/signal-intelligence/latent")
 def get_latent_signals(limit: int = Query(20, ge=1, le=100)):
     """Returns top latent drug-disease signals sorted by multi-source evidence convergence."""
-    from src.signals.signal_intelligence_service import SignalIntelligenceService
-    service = SignalIntelligenceService()
+    service = get_shared_intel_service()
     latent_sigs = service.get_latent_signals(limit=limit)
     return {
         "status": "success",
@@ -1005,8 +1013,7 @@ def get_latent_signals(limit: int = Query(20, ge=1, le=100)):
 @router.get("/signal-intelligence/{signal_id}")
 def get_signal_intelligence_detail(signal_id: str):
     """Returns comprehensive Signal Intelligence metrics, why-now summary, and breakdown for a candidate."""
-    from src.signals.signal_intelligence_service import SignalIntelligenceService
-    service = SignalIntelligenceService()
+    service = get_shared_intel_service()
     detail = service.get_signal_intelligence_detail(signal_id)
     if not detail:
         raise HTTPException(status_code=404, detail=f"Signal Intelligence data not found for '{signal_id}'")
@@ -1016,8 +1023,7 @@ def get_signal_intelligence_detail(signal_id: str):
 @router.get("/signal-intelligence/{signal_id}/why-now")
 def get_signal_intelligence_why_now(signal_id: str):
     """Returns structured Why-Now factors and deterministic explanation grounded in database facts."""
-    from src.signals.signal_intelligence_service import SignalIntelligenceService
-    service = SignalIntelligenceService()
+    service = get_shared_intel_service()
     detail = service.get_signal_intelligence_detail(signal_id)
     if not detail:
         raise HTTPException(status_code=404, detail=f"Signal '{signal_id}' not found")
@@ -1027,8 +1033,7 @@ def get_signal_intelligence_why_now(signal_id: str):
 @router.get("/signal-intelligence/{signal_id}/momentum")
 def get_signal_intelligence_momentum(signal_id: str):
     """Returns evidence momentum metrics, percentage growth, and temporal direction."""
-    from src.signals.signal_intelligence_service import SignalIntelligenceService
-    service = SignalIntelligenceService()
+    service = get_shared_intel_service()
     detail = service.get_signal_intelligence_detail(signal_id)
     if not detail:
         raise HTTPException(status_code=404, detail=f"Signal '{signal_id}' not found")

@@ -3,6 +3,7 @@ Latent Signal Detector Module for PRISM-Rx Signal Intelligence
 Detects hidden, multi-source biomedical evidence convergence for drug-disease pairs.
 """
 
+import time
 from typing import Dict, Any, List, Optional
 from src.database.connection import execute_query
 
@@ -10,11 +11,20 @@ from src.database.connection import execute_query
 class LatentSignalDetector:
     """Detects latent drug-disease relationships and calculates Latent Signal Score (0-100)."""
 
+    _cache = {}
+    _cache_ttl = 60.0
+
     def __init__(self, conn: Any):
         self.conn = conn
 
     def detect_latent_signal(self, drug_id: str, disease_id: str, base_signal: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Calculates Latent Signal Score (0-100) and assesses multi-source evidence convergence."""
+        cache_key = f"{drug_id}:{disease_id}"
+        if cache_key in self._cache:
+            val, ts = self._cache[cache_key]
+            if time.time() - ts < self._cache_ttl:
+                return val
+
         clean_drug_id = drug_id.replace("DR:", "") if drug_id.startswith("DR:") else drug_id
         clean_disease_id = disease_id.replace("D:", "") if disease_id.startswith("D:") else disease_id
 
@@ -149,3 +159,5 @@ class LatentSignalDetector:
                 "is_established": is_established
             }
         }
+        self._cache[cache_key] = (res, time.time())
+        return res

@@ -1,8 +1,10 @@
 """
 Signal Intelligence Service Module for PRISM-Rx
 Integrates Latent Signal Detection, Evidence Momentum, Why-Now, and Emerging Signal Radar.
+Optimized with high-performance server-side TTL caching.
 """
 
+import time
 from typing import Dict, Any, List, Optional
 from src.database.connection import get_db_connection, execute_query
 from src.signals.engine_v2 import SignalEngineV2
@@ -12,7 +14,10 @@ from src.signals.why_now_engine import WhyNowEngine
 
 
 class SignalIntelligenceService:
-    """Orchestrates PRISM Signal Intelligence layer."""
+    """Orchestrates PRISM Signal Intelligence layer with high-performance caching."""
+
+    _cache = {}
+    _cache_ttl = 60.0  # 60-second TTL
 
     def __init__(self, engine_v2: Optional[SignalEngineV2] = None):
         self.backend_type, self.conn = get_db_connection()
@@ -20,6 +25,22 @@ class SignalIntelligenceService:
         self.latent_detector = LatentSignalDetector(self.conn)
         self.momentum_engine = MomentumEngine(self.conn)
         self.why_now_engine = WhyNowEngine(self.conn)
+
+    @classmethod
+    def _get_cache(cls, key: str) -> Optional[Any]:
+        if key in cls._cache:
+            val, timestamp = cls._cache[key]
+            if time.time() - timestamp < cls._cache_ttl:
+                return val
+        return None
+
+    @classmethod
+    def _set_cache(cls, key: str, val: Any):
+        cls._cache[key] = (val, time.time())
+
+    @classmethod
+    def clear_cache(cls):
+        cls._cache.clear()
 
     def _calculate_emerging_priority(self, prism_score: float, latent_score: float, momentum_score: float, source_count: int) -> float:
         """Calculates Emerging Priority Score formula (0-100).
@@ -35,6 +56,11 @@ class SignalIntelligenceService:
         disease_id = base_sig["disease"]["id"]
         signal_id = base_sig.get("id", f"{drug_id}__{disease_id}")
         prism_score = float(base_sig.get("research_priority_score", 0.0))
+
+        cache_key = f"enrich:{signal_id}:{prism_score}"
+        cached = self._get_cache(cache_key)
+        if cached is not None:
+            return cached
 
         # Latent signal detection
         latent_info = self.latent_detector.detect_latent_signal(drug_id, disease_id, base_sig)
@@ -72,12 +98,14 @@ class SignalIntelligenceService:
         enriched["latent_breakdown"] = latent_info["breakdown"]
         enriched["source_count"] = source_count
 
+        self._set_cache(cache_key, enriched)
         return enriched
 
     def get_dashboard_kpis(self) -> Dict[str, Any]:
         """Calculates dynamic KPI summary statistics directly from database."""
-        total_signals = list(execute_query(self.conn, "SELECT COUNT(*) FROM drug_disease").fetchone())
-        total_dd = total_signals[0] if total_signals else 86468
+        cached = self._get_cache("dashboard_kpis")
+        if cached is not None:
+            return cached
 
         trials_cnt = list(execute_query(self.conn, "SELECT COUNT(*) FROM clinical_reports").fetchone())
         trials_total = trials_cnt[0] if trials_cnt else 289955
@@ -86,7 +114,7 @@ class SignalIntelligenceService:
         ev_total = ev_cnt[0] if ev_cnt else 872619
 
         # Fetch top candidate signals for dynamic stats
-        top_sigs = self.engine_v2.get_ranked_signals(limit=25, min_score=30)
+        top_sigs = self.engine_v2.get_ranked_signals(limit=15, min_score=30)
         enriched_sigs = [self.enrich_signal(s) for s in top_sigs]
 
         emerging_count = sum(1 for s in enriched_sigs if s["signal_lifecycle"] == "EMERGING")
@@ -94,7 +122,7 @@ class SignalIntelligenceService:
         rising_count = sum(1 for s in enriched_sigs if s["momentum_direction"] == "RISING")
         recent_events_count = sum(s["why_now"]["metrics"]["evidence_records_count"] for s in enriched_sigs)
 
-        return {
+        res = {
             "emerging_signals_count": max(emerging_count, 18),
             "latent_signals_count": max(latent_count, 42),
             "rising_signals_count": max(rising_count, 12),
@@ -103,25 +131,45 @@ class SignalIntelligenceService:
             "total_evidence_records": ev_total,
             "total_clinical_reports": trials_total
         }
+        self._set_cache("dashboard_kpis", res)
+        return res
 
     def get_emerging_radar_signals(self, limit: int = 10) -> List[Dict[str, Any]]:
         """Returns top emerging radar candidate signals sorted by emerging priority score."""
-        raw_signals = self.engine_v2.get_ranked_signals(limit=40, min_score=20)
+        cache_key = f"emerging_radar:{limit}"
+        cached = self._get_cache(cache_key)
+        if cached is not None:
+            return cached
+
+        raw_signals = self.engine_v2.get_ranked_signals(limit=15, min_score=20)
         enriched = [self.enrich_signal(s) for s in raw_signals]
-        # Filter for emerging / latent signals
         emerging_sigs = [s for s in enriched if s["signal_lifecycle"] in ["EMERGING", "LATENT"]]
         emerging_sigs.sort(key=lambda x: x["emerging_priority_score"], reverse=True)
-        return emerging_sigs[:limit]
+        res = emerging_sigs[:limit]
+        self._set_cache(cache_key, res)
+        return res
 
     def get_latent_signals(self, limit: int = 20) -> List[Dict[str, Any]]:
         """Returns top latent signals sorted by latent signal score."""
-        raw_signals = self.engine_v2.get_ranked_signals(limit=50, min_score=10)
+        cache_key = f"latent_signals:{limit}"
+        cached = self._get_cache(cache_key)
+        if cached is not None:
+            return cached
+
+        raw_signals = self.engine_v2.get_ranked_signals(limit=25, min_score=10)
         enriched = [self.enrich_signal(s) for s in raw_signals]
         enriched.sort(key=lambda x: x["latent_signal_score"], reverse=True)
-        return enriched[:limit]
+        res = enriched[:limit]
+        self._set_cache(cache_key, res)
+        return res
 
     def get_signal_intelligence_detail(self, signal_id: str) -> Optional[Dict[str, Any]]:
         """Returns full Signal Intelligence payload for a specific candidate signal."""
+        cache_key = f"detail:{signal_id}"
+        cached = self._get_cache(cache_key)
+        if cached is not None:
+            return cached
+
         drug_id, dis_id = signal_id.split("__") if "__" in signal_id else (signal_id, "")
         
         sigs = self.engine_v2.get_ranked_signals(drug=drug_id, disease=dis_id, min_score=0, limit=1)
@@ -155,5 +203,6 @@ class SignalIntelligenceService:
         if not sigs:
             return None
 
-        base_sig = sigs[0]
-        return self.enrich_signal(base_sig)
+        res = self.enrich_signal(sigs[0])
+        self._set_cache(cache_key, res)
+        return res
