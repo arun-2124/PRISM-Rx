@@ -1,0 +1,570 @@
+{
+  "top5": [
+    {
+      "drug": {
+        "id": "DR:CHEMBL2108184",
+        "name": "Crofelemer",
+        "chembl_id": "CHEMBL2108184",
+        "type": "Small molecule",
+        "max_stage": "APPROVAL"
+      },
+      "disease": {
+        "id": "D:MONDO_0005087",
+        "name": "respiratory system disorder",
+        "source_id": "MONDO_0005087"
+      },
+      "research_priority_score": 78.0,
+      "category": "STRONG_RESEARCH_SIGNAL",
+      "supporting_paths": [
+        {
+          "target": {
+            "id": "T:ENSG00000001626",
+            "symbol": "CFTR",
+            "name": "CF transmembrane conductance regulator",
+            "class": "[{'id': 1146, 'label': 'Chloride channel', 'level': 'l3'}\n {'id': 1146, 'label': 'Cystic fibrosis transmembrane conductance regulator', 'level': 'l4'}\n {'id': 1146, 'label': 'Ion channel', 'level': 'l1'}\n {'id': 1146, 'label': 'Other ion channel', 'level': 'l2'}]"
+          },
+          "action_type": "INHIBITOR",
+          "mechanism": "Cystic fibrosis transmembrane conductance regulator inhibitor",
+          "target_disease_score": 1.0,
+          "source": "Open Targets"
+        }
+      ],
+      "evidence": {
+        "target_disease_score": 1.0,
+        "drug_target_confidence": 0.9,
+        "highest_clinical_phase": "APPROVAL",
+        "evidence_records_count": 24,
+        "literature_count": 4,
+        "source_diversity_count": 3,
+        "sources_list": [
+          "ClinicalTrials.gov",
+          "Europe PMC",
+          "Open Targets"
+        ],
+        "multi_target_count": 1,
+        "safety_warnings_count": 0,
+        "contradictions_count": 0
+      },
+      "score_components": {
+        "target_disease_pts": 30.0,
+        "drug_target_pts": 13.5,
+        "clinical_pts": 15.0,
+        "literature_pts": 7.0,
+        "source_diversity_pts": 7.5,
+        "multi_target_bonus_pts": 0.0,
+        "novelty_pts": 5.0,
+        "safety_penalty": 0.0,
+        "contradiction_penalty": 0.0,
+        "action_conf_val": 0.9,
+        "highest_phase": "APPROVAL",
+        "evidence_tier": "MEDIUM"
+      },
+      "explanation": "Candidate 'Crofelemer' is prioritized for 'respiratory system disorder' with a Research Priority Score of 43.5/100. It is supported by a single primary target mechanism. Clinical trial evidence is available (highest stage: APPROVAL). Evidence is verified across 3 independent data source(s). Classified as a STRONG_RESEARCH_SIGNAL for laboratory or in-silico validation.",
+      "limitations": [
+        "Computational hypothesis generated from public biological datasets (Open Targets 26.06).",
+        "Does NOT constitute medical advice, clinical efficacy prediction, or safety clearance.",
+        "Absence of safety warnings in database does not guarantee safety."
+      ]
+    },
+    {
+      "drug": {
+        "id": "DR:CHEMBL2108184",
+        "name": "Crofelemer",
+        "chembl_id": "CHEMBL2108184",
+        "type": "Small molecule",
+        "max_stage": "APPROVAL"
+      },
+      "disease": {
+        "id": "D:MONDO_0009061",
+        "name": "cystic fibrosis",
+        "source_id": "MONDO_0009061"
+      },
+      "research_priority_score": 78.0,
+      "category": "STRONG_RESEARCH_SIGNAL",
+      "supporting_paths": [
+        {
+          "target": {
+            "id": "T:ENSG00000001626",
+            "symbol": "CFTR",
+            "name": "CF transmembrane conductance regulator",
+            "class": "[{'id': 1146, 'label': 'Chloride channel', 'level': 'l3'}\n {'id': 1146, 'label': 'Cystic fibrosis transmembrane conductance regulator', 'level': 'l4'}\n {'id': 1146, 'label': 'Ion channel', 'level': 'l1'}\n {'id': 1146, 'label': 'Other ion channel', 'level': 'l2'}]"
+          },
+          "action_type": "INHIBITOR",
+          "mechanism": "Cystic fibrosis transmembrane conductance regulator inhibitor",
+          "target_disease_score": 1.0,
+          "source": "Open Targets"
+        }
+      ],
+      "evidence": {
+        "target_disease_score": 1.0,
+        "drug_target_confidence": 0.9,
+        "highest_clinical_phase": "APPROVAL",
+        "evidence_records_count": 24,
+        "literature_count": 4,
+        "source_diversity_count": 3,
+        "sources_list": [
+          "ClinicalTrials.gov",
+          "Europe PMC",
+          "Open Targets"
+        ],
+        "multi_target_count": 1,
+        "safety_warnings_count": 0,
+        "contradictions_count": 0
+      },
+      "score_components": {
+        "target_disease_pts": 30.0,
+        "drug_target_pts": 13.5,
+        "clinical_pts": 15.0,
+        "literature_pts": 7.0,
+        "source_diversity_pts": 7.5,
+        "multi_target_bonus_pts": 0.0,
+        "novelty_pts": 5.0,
+        "safety_penalty": 0.0,
+        "contradiction_penalty": 0.0,
+        "action_conf_val": 0.9,
+        "highest_phase": "APPROVAL",
+        "evidence_tier": "MEDIUM"
+      },
+      "explanation": "Candidate 'Crofelemer' is prioritized for 'cystic fibrosis' with a Research Priority Score of 43.5/100. It is supported by a single primary target mechanism. Clinical trial evidence is available (highest stage: APPROVAL). Evidence is verified across 3 independent data source(s). Classified as a STRONG_RESEARCH_SIGNAL for laboratory or in-silico validation.",
+      "limitations": [
+        "Computational hypothesis generated from public biological datasets (Open Targets 26.06).",
+        "Does NOT constitute medical advice, clinical efficacy prediction, or safety clearance.",
+        "Absence of safety warnings in database does not guarantee safety."
+      ]
+    },
+    {
+      "drug": {
+        "id": "DR:CHEMBL2108184",
+        "name": "Crofelemer",
+        "chembl_id": "CHEMBL2108184",
+        "type": "Small molecule",
+        "max_stage": "APPROVAL"
+      },
+      "disease": {
+        "id": "D:MONDO_0015796",
+        "name": "acute lung injury",
+        "source_id": "MONDO_0015796"
+      },
+      "research_priority_score": 78.0,
+      "category": "STRONG_RESEARCH_SIGNAL",
+      "supporting_paths": [
+        {
+          "target": {
+            "id": "T:ENSG00000001626",
+            "symbol": "CFTR",
+            "name": "CF transmembrane conductance regulator",
+            "class": "[{'id': 1146, 'label': 'Chloride channel', 'level': 'l3'}\n {'id': 1146, 'label': 'Cystic fibrosis transmembrane conductance regulator', 'level': 'l4'}\n {'id': 1146, 'label': 'Ion channel', 'level': 'l1'}\n {'id': 1146, 'label': 'Other ion channel', 'level': 'l2'}]"
+          },
+          "action_type": "INHIBITOR",
+          "mechanism": "Cystic fibrosis transmembrane conductance regulator inhibitor",
+          "target_disease_score": 1.0,
+          "source": "Open Targets"
+        }
+      ],
+      "evidence": {
+        "target_disease_score": 1.0,
+        "drug_target_confidence": 0.9,
+        "highest_clinical_phase": "APPROVAL",
+        "evidence_records_count": 24,
+        "literature_count": 4,
+        "source_diversity_count": 3,
+        "sources_list": [
+          "ClinicalTrials.gov",
+          "Europe PMC",
+          "Open Targets"
+        ],
+        "multi_target_count": 1,
+        "safety_warnings_count": 0,
+        "contradictions_count": 0
+      },
+      "score_components": {
+        "target_disease_pts": 30.0,
+        "drug_target_pts": 13.5,
+        "clinical_pts": 15.0,
+        "literature_pts": 7.0,
+        "source_diversity_pts": 7.5,
+        "multi_target_bonus_pts": 0.0,
+        "novelty_pts": 5.0,
+        "safety_penalty": 0.0,
+        "contradiction_penalty": 0.0,
+        "action_conf_val": 0.9,
+        "highest_phase": "APPROVAL",
+        "evidence_tier": "MEDIUM"
+      },
+      "explanation": "Candidate 'Crofelemer' is prioritized for 'acute lung injury' with a Research Priority Score of 43.5/100. It is supported by a single primary target mechanism. Clinical trial evidence is available (highest stage: APPROVAL). Evidence is verified across 3 independent data source(s). Classified as a STRONG_RESEARCH_SIGNAL for laboratory or in-silico validation.",
+      "limitations": [
+        "Computational hypothesis generated from public biological datasets (Open Targets 26.06).",
+        "Does NOT constitute medical advice, clinical efficacy prediction, or safety clearance.",
+        "Absence of safety warnings in database does not guarantee safety."
+      ]
+    },
+    {
+      "drug": {
+        "id": "DR:CHEMBL4594248",
+        "name": "Calcitonin Human",
+        "chembl_id": "CHEMBL4594248",
+        "type": "Protein",
+        "max_stage": "APPROVAL"
+      },
+      "disease": {
+        "id": "D:HP_0003072",
+        "name": "Hypercalcemia",
+        "source_id": "HP_0003072"
+      },
+      "research_priority_score": 76.5,
+      "category": "STRONG_RESEARCH_SIGNAL",
+      "supporting_paths": [
+        {
+          "target": {
+            "id": "T:ENSG00000004948",
+            "symbol": "CALCR",
+            "name": "calcitonin receptor",
+            "class": "[{'id': 202, 'label': 'Calcitonin-like receptor', 'level': 'l4'}\n {'id': 202, 'label': 'Peptide receptor (family B GPCR)', 'level': 'l3'}\n {'id': 202, 'label': 'Family B G protein-coupled receptor', 'level': 'l2'}\n {'id': 202, 'label': 'Membrane receptor', 'level': 'l1'}\n {'id': 202, 'label': 'Calcitonin receptor', 'level': 'l5'}]"
+          },
+          "action_type": "AGONIST",
+          "mechanism": "Calcitonin receptor agonist",
+          "target_disease_score": 1.0,
+          "source": "Open Targets"
+        }
+      ],
+      "evidence": {
+        "target_disease_score": 1.0,
+        "drug_target_confidence": 0.8,
+        "highest_clinical_phase": "APPROVAL",
+        "evidence_records_count": 4,
+        "literature_count": 0,
+        "source_diversity_count": 3,
+        "sources_list": [
+          "ClinicalTrials.gov",
+          "Europe PMC",
+          "Open Targets"
+        ],
+        "multi_target_count": 1,
+        "safety_warnings_count": 0,
+        "contradictions_count": 0
+      },
+      "score_components": {
+        "target_disease_pts": 30.0,
+        "drug_target_pts": 12.0,
+        "clinical_pts": 15.0,
+        "literature_pts": 7.0,
+        "source_diversity_pts": 7.5,
+        "multi_target_bonus_pts": 0.0,
+        "novelty_pts": 5.0,
+        "safety_penalty": 0.0,
+        "contradiction_penalty": 0.0,
+        "action_conf_val": 0.8,
+        "highest_phase": "APPROVAL",
+        "evidence_tier": "MEDIUM"
+      },
+      "explanation": "Candidate 'Calcitonin Human' is prioritized for 'Hypercalcemia' with a Research Priority Score of 42.0/100. It is supported by a single primary target mechanism. Clinical trial evidence is available (highest stage: APPROVAL). Evidence is verified across 3 independent data source(s). Classified as a STRONG_RESEARCH_SIGNAL for laboratory or in-silico validation.",
+      "limitations": [
+        "Computational hypothesis generated from public biological datasets (Open Targets 26.06).",
+        "Does NOT constitute medical advice, clinical efficacy prediction, or safety clearance.",
+        "Absence of safety warnings in database does not guarantee safety."
+      ]
+    },
+    {
+      "drug": {
+        "id": "DR:CHEMBL3545415",
+        "name": "Smc021",
+        "chembl_id": "CHEMBL3545415",
+        "type": "Unknown",
+        "max_stage": "APPROVAL"
+      },
+      "disease": {
+        "id": "D:HP_0003072",
+        "name": "Hypercalcemia",
+        "source_id": "HP_0003072"
+      },
+      "research_priority_score": 76.5,
+      "category": "STRONG_RESEARCH_SIGNAL",
+      "supporting_paths": [
+        {
+          "target": {
+            "id": "T:ENSG00000004948",
+            "symbol": "CALCR",
+            "name": "calcitonin receptor",
+            "class": "[{'id': 202, 'label': 'Calcitonin-like receptor', 'level': 'l4'}\n {'id': 202, 'label': 'Peptide receptor (family B GPCR)', 'level': 'l3'}\n {'id': 202, 'label': 'Family B G protein-coupled receptor', 'level': 'l2'}\n {'id': 202, 'label': 'Membrane receptor', 'level': 'l1'}\n {'id': 202, 'label': 'Calcitonin receptor', 'level': 'l5'}]"
+          },
+          "action_type": "AGONIST",
+          "mechanism": "Calcitonin receptor agonist",
+          "target_disease_score": 1.0,
+          "source": "Open Targets"
+        }
+      ],
+      "evidence": {
+        "target_disease_score": 1.0,
+        "drug_target_confidence": 0.8,
+        "highest_clinical_phase": "APPROVAL",
+        "evidence_records_count": 8,
+        "literature_count": 5,
+        "source_diversity_count": 3,
+        "sources_list": [
+          "ClinicalTrials.gov",
+          "Europe PMC",
+          "Open Targets"
+        ],
+        "multi_target_count": 1,
+        "safety_warnings_count": 0,
+        "contradictions_count": 0
+      },
+      "score_components": {
+        "target_disease_pts": 30.0,
+        "drug_target_pts": 12.0,
+        "clinical_pts": 15.0,
+        "literature_pts": 7.0,
+        "source_diversity_pts": 7.5,
+        "multi_target_bonus_pts": 0.0,
+        "novelty_pts": 5.0,
+        "safety_penalty": 0.0,
+        "contradiction_penalty": 0.0,
+        "action_conf_val": 0.8,
+        "highest_phase": "APPROVAL",
+        "evidence_tier": "MEDIUM"
+      },
+      "explanation": "Candidate 'Smc021' is prioritized for 'Hypercalcemia' with a Research Priority Score of 42.0/100. It is supported by a single primary target mechanism. Clinical trial evidence is available (highest stage: APPROVAL). Evidence is verified across 3 independent data source(s). Classified as a STRONG_RESEARCH_SIGNAL for laboratory or in-silico validation.",
+      "limitations": [
+        "Computational hypothesis generated from public biological datasets (Open Targets 26.06).",
+        "Does NOT constitute medical advice, clinical efficacy prediction, or safety clearance.",
+        "Absence of safety warnings in database does not guarantee safety."
+      ]
+    }
+  ],
+  "tg100_801": [
+    {
+      "drug": {
+        "id": "DR:CHEMBL403989",
+        "name": "Tg100-801",
+        "chembl_id": "CHEMBL403989",
+        "type": "Small molecule",
+        "max_stage": "PHASE_2"
+      },
+      "disease": {
+        "id": "D:MONDO_0004967",
+        "name": "acute lymphoblastic leukemia",
+        "source_id": "MONDO_0004967"
+      },
+      "research_priority_score": 82.0,
+      "category": "STRONG_RESEARCH_SIGNAL",
+      "supporting_paths": [
+        {
+          "target": {
+            "id": "T:ENSG00000010810",
+            "symbol": "FYN",
+            "name": "FYN proto-oncogene, Src family tyrosine kinase",
+            "class": "[{'id': 141, 'label': 'Kinase', 'level': 'l2'}\n {'id': 141, 'label': 'TK protein kinase group', 'level': 'l4'}\n {'id': 141, 'label': 'Enzyme', 'level': 'l1'}\n {'id': 141, 'label': 'Protein Kinase', 'level': 'l3'}\n {'id': 141, 'label': 'Tyrosine protein kinase Src family', 'level': 'l5'}]"
+          },
+          "action_type": "INHIBITOR",
+          "mechanism": "SRC inhibitor",
+          "target_disease_score": 1.0,
+          "source": "Open Targets"
+        },
+        {
+          "target": {
+            "id": "T:ENSG00000197122",
+            "symbol": "SRC",
+            "name": "SRC proto-oncogene, non-receptor tyrosine kinase",
+            "class": "[{'id': 141, 'label': 'Kinase', 'level': 'l2'}\n {'id': 141, 'label': 'TK protein kinase group', 'level': 'l4'}\n {'id': 141, 'label': 'Enzyme', 'level': 'l1'}\n {'id': 141, 'label': 'Protein Kinase', 'level': 'l3'}\n {'id': 141, 'label': 'Tyrosine protein kinase Src family', 'level': 'l5'}]"
+          },
+          "action_type": "INHIBITOR",
+          "mechanism": "SRC inhibitor",
+          "target_disease_score": 1.0,
+          "source": "Open Targets"
+        },
+        {
+          "target": {
+            "id": "T:ENSG00000182866",
+            "symbol": "LCK",
+            "name": "LCK proto-oncogene, Src family tyrosine kinase",
+            "class": "[{'id': 141, 'label': 'Kinase', 'level': 'l2'}\n {'id': 141, 'label': 'TK protein kinase group', 'level': 'l4'}\n {'id': 141, 'label': 'Enzyme', 'level': 'l1'}\n {'id': 141, 'label': 'Protein Kinase', 'level': 'l3'}\n {'id': 141, 'label': 'Tyrosine protein kinase Src family', 'level': 'l5'}]"
+          },
+          "action_type": "INHIBITOR",
+          "mechanism": "SRC inhibitor",
+          "target_disease_score": 1.0,
+          "source": "Open Targets"
+        },
+        {
+          "target": {
+            "id": "T:ENSG00000176105",
+            "symbol": "YES1",
+            "name": "YES proto-oncogene 1, Src family tyrosine kinase",
+            "class": "[{'id': 141, 'label': 'Kinase', 'level': 'l2'}\n {'id': 141, 'label': 'TK protein kinase group', 'level': 'l4'}\n {'id': 141, 'label': 'Enzyme', 'level': 'l1'}\n {'id': 141, 'label': 'Protein Kinase', 'level': 'l3'}\n {'id': 141, 'label': 'Tyrosine protein kinase Src family', 'level': 'l5'}]"
+          },
+          "action_type": "INHIBITOR",
+          "mechanism": "SRC inhibitor",
+          "target_disease_score": 1.0,
+          "source": "Open Targets"
+        },
+        {
+          "target": {
+            "id": "T:ENSG00000136573",
+            "symbol": "BLK",
+            "name": "BLK proto-oncogene, Src family tyrosine kinase",
+            "class": "[{'id': 141, 'label': 'Kinase', 'level': 'l2'}\n {'id': 141, 'label': 'TK protein kinase group', 'level': 'l4'}\n {'id': 141, 'label': 'Enzyme', 'level': 'l1'}\n {'id': 141, 'label': 'Protein Kinase', 'level': 'l3'}\n {'id': 141, 'label': 'Tyrosine protein kinase Src family', 'level': 'l5'}]"
+          },
+          "action_type": "INHIBITOR",
+          "mechanism": "SRC inhibitor",
+          "target_disease_score": 1.0,
+          "source": "Open Targets"
+        },
+        {
+          "target": {
+            "id": "T:ENSG00000101336",
+            "symbol": "HCK",
+            "name": "HCK proto-oncogene, Src family tyrosine kinase",
+            "class": "[{'id': 141, 'label': 'Kinase', 'level': 'l2'}\n {'id': 141, 'label': 'TK protein kinase group', 'level': 'l4'}\n {'id': 141, 'label': 'Enzyme', 'level': 'l1'}\n {'id': 141, 'label': 'Protein Kinase', 'level': 'l3'}\n {'id': 141, 'label': 'Tyrosine protein kinase Src family', 'level': 'l5'}]"
+          },
+          "action_type": "INHIBITOR",
+          "mechanism": "SRC inhibitor",
+          "target_disease_score": 1.0,
+          "source": "Open Targets"
+        },
+        {
+          "target": {
+            "id": "T:ENSG00000254087",
+            "symbol": "LYN",
+            "name": "LYN proto-oncogene, Src family tyrosine kinase",
+            "class": "[{'id': 141, 'label': 'Kinase', 'level': 'l2'}\n {'id': 141, 'label': 'TK protein kinase group', 'level': 'l4'}\n {'id': 141, 'label': 'Enzyme', 'level': 'l1'}\n {'id': 141, 'label': 'Protein Kinase', 'level': 'l3'}\n {'id': 141, 'label': 'Tyrosine protein kinase Src family', 'level': 'l5'}]"
+          },
+          "action_type": "INHIBITOR",
+          "mechanism": "SRC inhibitor",
+          "target_disease_score": 1.0,
+          "source": "Open Targets"
+        },
+        {
+          "target": {
+            "id": "T:ENSG00000111816",
+            "symbol": "FRK",
+            "name": "fyn related Src family tyrosine kinase",
+            "class": "[{'id': 141, 'label': 'Kinase', 'level': 'l2'}\n {'id': 141, 'label': 'TK protein kinase group', 'level': 'l4'}\n {'id': 141, 'label': 'Enzyme', 'level': 'l1'}\n {'id': 141, 'label': 'Protein Kinase', 'level': 'l3'}\n {'id': 141, 'label': 'Tyrosine protein kinase Src family', 'level': 'l5'}]"
+          },
+          "action_type": "INHIBITOR",
+          "mechanism": "SRC inhibitor",
+          "target_disease_score": 1.0,
+          "source": "Open Targets"
+        },
+        {
+          "target": {
+            "id": "T:ENSG00000000938",
+            "symbol": "FGR",
+            "name": "FGR proto-oncogene, Src family tyrosine kinase",
+            "class": "[{'id': 141, 'label': 'Kinase', 'level': 'l2'}\n {'id': 141, 'label': 'TK protein kinase group', 'level': 'l4'}\n {'id': 141, 'label': 'Enzyme', 'level': 'l1'}\n {'id': 141, 'label': 'Protein Kinase', 'level': 'l3'}\n {'id': 141, 'label': 'Tyrosine protein kinase Src family', 'level': 'l5'}]"
+          },
+          "action_type": "INHIBITOR",
+          "mechanism": "SRC inhibitor",
+          "target_disease_score": 1.0,
+          "source": "Open Targets"
+        },
+        {
+          "target": {
+            "id": "T:ENSG00000125508",
+            "symbol": "SRMS",
+            "name": "src-related kinase lacking C-terminal regulatory tyrosine and N-terminal myristylation sites",
+            "class": "[{'id': 219, 'label': 'TK protein kinase group', 'level': 'l4'}\n {'id': 219, 'label': 'Tyrosine protein kinase Src family', 'level': 'l5'}\n {'id': 219, 'label': 'Tyrosine protein kinase Srm', 'level': 'l6'}\n {'id': 219, 'label': 'Enzyme', 'level': 'l1'}\n {'id': 219, 'label': 'Kinase', 'level': 'l2'}\n {'id': 219, 'label': 'Protein Kinase', 'level': 'l3'}]"
+          },
+          "action_type": "INHIBITOR",
+          "mechanism": "SRC inhibitor",
+          "target_disease_score": 1.0,
+          "source": "Open Targets"
+        },
+        {
+          "target": {
+            "id": "T:ENSG00000113721",
+            "symbol": "PDGFRB",
+            "name": "platelet derived growth factor receptor beta",
+            "class": "[{'id': 159, 'label': 'TK protein kinase group', 'level': 'l4'}\n {'id': 159, 'label': 'Kinase', 'level': 'l2'}\n {'id': 159, 'label': 'Tyrosine protein kinase PDGFR family', 'level': 'l5'}\n {'id': 159, 'label': 'Protein Kinase', 'level': 'l3'}\n {'id': 159, 'label': 'Enzyme', 'level': 'l1'}]"
+          },
+          "action_type": "INHIBITOR",
+          "mechanism": "Platelet-derived growth factor receptor beta inhibitor",
+          "target_disease_score": 1.0,
+          "source": "Open Targets"
+        },
+        {
+          "target": {
+            "id": "T:ENSG00000066468",
+            "symbol": "FGFR2",
+            "name": "fibroblast growth factor receptor 2",
+            "class": "[{'id': 150, 'label': 'Enzyme', 'level': 'l1'}\n {'id': 150, 'label': 'Tyrosine protein kinase FGFR family', 'level': 'l5'}\n {'id': 150, 'label': 'Protein Kinase', 'level': 'l3'}\n {'id': 150, 'label': 'Kinase', 'level': 'l2'}\n {'id': 150, 'label': 'TK protein kinase group', 'level': 'l4'}]"
+          },
+          "action_type": "INHIBITOR",
+          "mechanism": "Fibroblast growth factor receptor 2 inhibitor",
+          "target_disease_score": 0.2,
+          "source": "Open Targets"
+        },
+        {
+          "target": {
+            "id": "T:ENSG00000102755",
+            "symbol": "FLT1",
+            "name": "fms related receptor tyrosine kinase 1",
+            "class": "[{'id': 160, 'label': 'Tyrosine protein kinase VEGFR family', 'level': 'l5'}\n {'id': 160, 'label': 'Enzyme', 'level': 'l1'}\n {'id': 160, 'label': 'TK protein kinase group', 'level': 'l4'}\n {'id': 160, 'label': 'Protein Kinase', 'level': 'l3'}\n {'id': 160, 'label': 'Kinase', 'level': 'l2'}]"
+          },
+          "action_type": "INHIBITOR",
+          "mechanism": "Vascular endothelial growth factor receptor 1 inhibitor",
+          "target_disease_score": 0.2,
+          "source": "Open Targets"
+        },
+        {
+          "target": {
+            "id": "T:ENSG00000128052",
+            "symbol": "KDR",
+            "name": "kinase insert domain receptor",
+            "class": "[{'id': 160, 'label': 'Tyrosine protein kinase VEGFR family', 'level': 'l5'}\n {'id': 160, 'label': 'Enzyme', 'level': 'l1'}\n {'id': 160, 'label': 'TK protein kinase group', 'level': 'l4'}\n {'id': 160, 'label': 'Protein Kinase', 'level': 'l3'}\n {'id': 160, 'label': 'Kinase', 'level': 'l2'}]"
+          },
+          "action_type": "INHIBITOR",
+          "mechanism": "Vascular endothelial growth factor receptor 2 inhibitor",
+          "target_disease_score": 0.2,
+          "source": "Open Targets"
+        },
+        {
+          "target": {
+            "id": "T:ENSG00000077782",
+            "symbol": "FGFR1",
+            "name": "fibroblast growth factor receptor 1",
+            "class": "[{'id': 150, 'label': 'Enzyme', 'level': 'l1'}\n {'id': 150, 'label': 'Tyrosine protein kinase FGFR family', 'level': 'l5'}\n {'id': 150, 'label': 'Protein Kinase', 'level': 'l3'}\n {'id': 150, 'label': 'Kinase', 'level': 'l2'}\n {'id': 150, 'label': 'TK protein kinase group', 'level': 'l4'}]"
+          },
+          "action_type": "INHIBITOR",
+          "mechanism": "Fibroblast growth factor receptor 1 inhibitor",
+          "target_disease_score": 0.2,
+          "source": "Open Targets"
+        }
+      ],
+      "evidence": {
+        "target_disease_score": 1.0,
+        "drug_target_confidence": 0.9,
+        "highest_clinical_phase": "PHASE_2",
+        "evidence_records_count": 32,
+        "literature_count": 0,
+        "source_diversity_count": 3,
+        "sources_list": [
+          "ClinicalTrials.gov",
+          "Europe PMC",
+          "Open Targets"
+        ],
+        "multi_target_count": 15,
+        "safety_warnings_count": 0,
+        "contradictions_count": 0
+      },
+      "score_components": {
+        "target_disease_pts": 30.0,
+        "drug_target_pts": 13.5,
+        "clinical_pts": 9.0,
+        "literature_pts": 7.0,
+        "source_diversity_pts": 7.5,
+        "multi_target_bonus_pts": 10.0,
+        "novelty_pts": 5.0,
+        "safety_penalty": 0.0,
+        "contradiction_penalty": 0.0,
+        "action_conf_val": 0.9,
+        "highest_phase": "PHASE_2",
+        "evidence_tier": "MEDIUM"
+      },
+      "explanation": "Candidate 'Tg100-801' is prioritized for 'acute lymphoblastic leukemia' with a Research Priority Score of 43.5/100. It is supported by multi-target activity across 15 biological targets. Clinical trial evidence is available (highest stage: PHASE_2). Evidence is verified across 3 independent data source(s). Classified as a STRONG_RESEARCH_SIGNAL for laboratory or in-silico validation.",
+      "limitations": [
+        "Computational hypothesis generated from public biological datasets (Open Targets 26.06).",
+        "Does NOT constitute medical advice, clinical efficacy prediction, or safety clearance.",
+        "Absence of safety warnings in database does not guarantee safety."
+      ]
+    }
+  ]
+}

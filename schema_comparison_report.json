@@ -1,0 +1,1130 @@
+{
+  "alerts": {
+    "sqlite_column_count": 8,
+    "pg_column_count": 8,
+    "missing_in_pg": [],
+    "missing_in_sq": [],
+    "columns": [
+      {
+        "column": "created_at",
+        "sqlite_type": "TEXT",
+        "pg_type": "timestamp with time zone",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "disease_id",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "drug_id",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "enabled",
+        "sqlite_type": "INTEGER",
+        "pg_type": "integer",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "id",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": true,
+        "match": true
+      },
+      {
+        "column": "min_momentum",
+        "sqlite_type": "REAL",
+        "pg_type": "double precision",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "min_score",
+        "sqlite_type": "REAL",
+        "pg_type": "double precision",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "topic",
+        "sqlite_type": "TEXT",
+        "pg_type": "text",
+        "pk": false,
+        "match": true
+      }
+    ]
+  },
+  "clinical_reports": {
+    "sqlite_column_count": 15,
+    "pg_column_count": 15,
+    "missing_in_pg": [],
+    "missing_in_sq": [],
+    "columns": [
+      {
+        "column": "clinical_stage",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "has_expert_review",
+        "sqlite_type": "INTEGER",
+        "pg_type": "integer",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "id",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": true,
+        "match": true
+      },
+      {
+        "column": "report_type",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "retrieved_at",
+        "sqlite_type": "TEXT",
+        "pg_type": "timestamp with time zone",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "source",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "source_name",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "source_version",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "trial_number_of_arms",
+        "sqlite_type": "REAL",
+        "pg_type": "double precision",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "trial_phase",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "trial_primary_purpose",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "trial_start_date",
+        "sqlite_type": "TEXT",
+        "pg_type": "date",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "trial_status",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "trial_study_type",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "url",
+        "sqlite_type": "TEXT",
+        "pg_type": "text",
+        "pk": false,
+        "match": true
+      }
+    ]
+  },
+  "diseases": {
+    "sqlite_column_count": 9,
+    "pg_column_count": 9,
+    "missing_in_pg": [],
+    "missing_in_sq": [],
+    "columns": [
+      {
+        "column": "created_at",
+        "sqlite_type": "TEXT",
+        "pg_type": "timestamp with time zone",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "description",
+        "sqlite_type": "TEXT",
+        "pg_type": "text",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "exact_synonyms",
+        "sqlite_type": "TEXT",
+        "pg_type": "text",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "id",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": true,
+        "match": true
+      },
+      {
+        "column": "is_therapeutic_area",
+        "sqlite_type": "INTEGER",
+        "pg_type": "integer",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "name",
+        "sqlite_type": "TEXT",
+        "pg_type": "text",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "parent_ids",
+        "sqlite_type": "TEXT",
+        "pg_type": "text",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "source_id",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "therapeutic_areas",
+        "sqlite_type": "TEXT",
+        "pg_type": "text",
+        "pk": false,
+        "match": true
+      }
+    ]
+  },
+  "drug_disease": {
+    "sqlite_column_count": 6,
+    "pg_column_count": 6,
+    "missing_in_pg": [],
+    "missing_in_sq": [],
+    "columns": [
+      {
+        "column": "disease_id",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": true,
+        "match": true
+      },
+      {
+        "column": "drug_id",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": true,
+        "match": true
+      },
+      {
+        "column": "max_clinical_stage",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "retrieved_at",
+        "sqlite_type": "TEXT",
+        "pg_type": "timestamp with time zone",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "source",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "source_version",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      }
+    ]
+  },
+  "drug_target": {
+    "sqlite_column_count": 7,
+    "pg_column_count": 7,
+    "missing_in_pg": [],
+    "missing_in_sq": [],
+    "columns": [
+      {
+        "column": "action_type",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": true,
+        "match": true
+      },
+      {
+        "column": "drug_id",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": true,
+        "match": true
+      },
+      {
+        "column": "mechanism_of_action",
+        "sqlite_type": "TEXT",
+        "pg_type": "text",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "retrieved_at",
+        "sqlite_type": "TEXT",
+        "pg_type": "timestamp with time zone",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "source",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "source_version",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "target_id",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": true,
+        "match": true
+      }
+    ]
+  },
+  "drug_warnings": {
+    "sqlite_column_count": 10,
+    "pg_column_count": 10,
+    "missing_in_pg": [],
+    "missing_in_sq": [],
+    "columns": [
+      {
+        "column": "country",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "description",
+        "sqlite_type": "TEXT",
+        "pg_type": "text",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "drug_id",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "efo_id",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "retrieved_at",
+        "sqlite_type": "TEXT",
+        "pg_type": "timestamp with time zone",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "source",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "source_version",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "toxicity_class",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "warning_type",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "year",
+        "sqlite_type": "REAL",
+        "pg_type": "double precision",
+        "pk": false,
+        "match": true
+      }
+    ]
+  },
+  "drugs": {
+    "sqlite_column_count": 12,
+    "pg_column_count": 12,
+    "missing_in_pg": [],
+    "missing_in_sq": [],
+    "columns": [
+      {
+        "column": "canonical_smiles",
+        "sqlite_type": "TEXT",
+        "pg_type": "text",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "chembl_id",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "created_at",
+        "sqlite_type": "TEXT",
+        "pg_type": "timestamp with time zone",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "drug_type",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "drugbank_ids",
+        "sqlite_type": "TEXT",
+        "pg_type": "text",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "id",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": true,
+        "match": true
+      },
+      {
+        "column": "inchi_key",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "max_clinical_stage",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "name",
+        "sqlite_type": "TEXT",
+        "pg_type": "text",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "parent_id",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "synonyms",
+        "sqlite_type": "TEXT",
+        "pg_type": "text",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "trade_names",
+        "sqlite_type": "TEXT",
+        "pg_type": "text",
+        "pk": false,
+        "match": true
+      }
+    ]
+  },
+  "entity_synonyms": {
+    "sqlite_column_count": 4,
+    "pg_column_count": 4,
+    "missing_in_pg": [],
+    "missing_in_sq": [],
+    "columns": [
+      {
+        "column": "canonical_id",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "entity_type",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "source",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "synonym",
+        "sqlite_type": "TEXT",
+        "pg_type": "text",
+        "pk": false,
+        "match": true
+      }
+    ]
+  },
+  "evidence": {
+    "sqlite_column_count": 14,
+    "pg_column_count": 14,
+    "missing_in_pg": [],
+    "missing_in_sq": [],
+    "columns": [
+      {
+        "column": "clinical_report_id",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "clinical_stage",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "direction_on_target",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "direction_on_trait",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "disease_id",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "drug_id",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "evidence_type",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "id",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": true,
+        "match": true
+      },
+      {
+        "column": "publication_ids",
+        "sqlite_type": "TEXT",
+        "pg_type": "text",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "retrieved_at",
+        "sqlite_type": "TEXT",
+        "pg_type": "timestamp with time zone",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "score",
+        "sqlite_type": "REAL",
+        "pg_type": "double precision",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "source",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "source_version",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "target_id",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      }
+    ]
+  },
+  "evidence_events": {
+    "sqlite_column_count": 16,
+    "pg_column_count": 16,
+    "missing_in_pg": [],
+    "missing_in_sq": [],
+    "columns": [
+      {
+        "column": "content_hash",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "detected_at",
+        "sqlite_type": "TEXT",
+        "pg_type": "timestamp with time zone",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "disease_id",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "drug_id",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "event_type",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "evidence_strength",
+        "sqlite_type": "REAL",
+        "pg_type": "double precision",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "id",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": true,
+        "match": true
+      },
+      {
+        "column": "metadata_json",
+        "sqlite_type": "TEXT",
+        "pg_type": "text",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "publication_date",
+        "sqlite_type": "TEXT",
+        "pg_type": "date",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "source",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "source_record_id",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "source_reliability",
+        "sqlite_type": "REAL",
+        "pg_type": "double precision",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "summary",
+        "sqlite_type": "TEXT",
+        "pg_type": "text",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "target_id",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "title",
+        "sqlite_type": "TEXT",
+        "pg_type": "text",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "url",
+        "sqlite_type": "TEXT",
+        "pg_type": "text",
+        "pk": false,
+        "match": true
+      }
+    ]
+  },
+  "publications": {
+    "sqlite_column_count": 8,
+    "pg_column_count": 8,
+    "missing_in_pg": [],
+    "missing_in_sq": [],
+    "columns": [
+      {
+        "column": "authors",
+        "sqlite_type": "TEXT",
+        "pg_type": "text",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "id",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": true,
+        "match": true
+      },
+      {
+        "column": "journal",
+        "sqlite_type": "TEXT",
+        "pg_type": "text",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "pmid",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "publication_date",
+        "sqlite_type": "TEXT",
+        "pg_type": "date",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "retrieved_at",
+        "sqlite_type": "TEXT",
+        "pg_type": "timestamp with time zone",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "source",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "title",
+        "sqlite_type": "TEXT",
+        "pg_type": "text",
+        "pk": false,
+        "match": true
+      }
+    ]
+  },
+  "signal_evidence": {
+    "sqlite_column_count": 4,
+    "pg_column_count": 4,
+    "missing_in_pg": [],
+    "missing_in_sq": [],
+    "columns": [
+      {
+        "column": "evidence_event_id",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": true,
+        "match": true
+      },
+      {
+        "column": "relationship_type",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "signal_id",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": true,
+        "match": true
+      },
+      {
+        "column": "weight",
+        "sqlite_type": "REAL",
+        "pg_type": "double precision",
+        "pk": false,
+        "match": true
+      }
+    ]
+  },
+  "signal_history": {
+    "sqlite_column_count": 13,
+    "pg_column_count": 13,
+    "missing_in_pg": [],
+    "missing_in_sq": [],
+    "columns": [
+      {
+        "column": "clinical_proximity_score",
+        "sqlite_type": "REAL",
+        "pg_type": "double precision",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "contradiction_penalty",
+        "sqlite_type": "REAL",
+        "pg_type": "double precision",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "convergence_score",
+        "sqlite_type": "REAL",
+        "pg_type": "double precision",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "disease_id",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "drug_id",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "evidence_score",
+        "sqlite_type": "REAL",
+        "pg_type": "double precision",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "id",
+        "sqlite_type": "INTEGER",
+        "pg_type": "bigint",
+        "pk": true,
+        "match": true
+      },
+      {
+        "column": "mechanistic_score",
+        "sqlite_type": "REAL",
+        "pg_type": "double precision",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "momentum_score",
+        "sqlite_type": "REAL",
+        "pg_type": "double precision",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "novelty_score",
+        "sqlite_type": "REAL",
+        "pg_type": "double precision",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "prism_score",
+        "sqlite_type": "REAL",
+        "pg_type": "double precision",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "reliability_score",
+        "sqlite_type": "REAL",
+        "pg_type": "double precision",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "timestamp",
+        "sqlite_type": "TEXT",
+        "pg_type": "timestamp with time zone",
+        "pk": false,
+        "match": true
+      }
+    ]
+  },
+  "target_disease": {
+    "sqlite_column_count": 6,
+    "pg_column_count": 6,
+    "missing_in_pg": [],
+    "missing_in_sq": [],
+    "columns": [
+      {
+        "column": "disease_id",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": true,
+        "match": true
+      },
+      {
+        "column": "retrieved_at",
+        "sqlite_type": "TEXT",
+        "pg_type": "timestamp with time zone",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "score",
+        "sqlite_type": "REAL",
+        "pg_type": "double precision",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "source",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "source_version",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "target_id",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": true,
+        "match": true
+      }
+    ]
+  },
+  "targets": {
+    "sqlite_column_count": 12,
+    "pg_column_count": 12,
+    "missing_in_pg": [],
+    "missing_in_sq": [],
+    "columns": [
+      {
+        "column": "approved_name",
+        "sqlite_type": "TEXT",
+        "pg_type": "text",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "approved_symbol",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "biotype",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "chembl_target_id",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "created_at",
+        "sqlite_type": "TEXT",
+        "pg_type": "timestamp with time zone",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "ensembl_id",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "function_descriptions",
+        "sqlite_type": "TEXT",
+        "pg_type": "text",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "hgnc_id",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "id",
+        "sqlite_type": "TEXT",
+        "pg_type": "character varying",
+        "pk": true,
+        "match": true
+      },
+      {
+        "column": "subcellular_locations",
+        "sqlite_type": "TEXT",
+        "pg_type": "text",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "target_class",
+        "sqlite_type": "TEXT",
+        "pg_type": "text",
+        "pk": false,
+        "match": true
+      },
+      {
+        "column": "uniprot_ids",
+        "sqlite_type": "TEXT",
+        "pg_type": "text",
+        "pk": false,
+        "match": true
+      }
+    ]
+  }
+}
