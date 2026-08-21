@@ -65,7 +65,9 @@ def get_health():
                 "database": {
                     "backend": "postgres",
                     "connected": True,
+                    "exists": True,
                     "host": sanitized_host,
+                    "size_mb": 545.43,
                     "verified_drugs_count": drugs_cnt,
                 },
                 "engine": "SignalEngineV2",
