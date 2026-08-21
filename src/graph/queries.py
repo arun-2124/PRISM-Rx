@@ -18,40 +18,40 @@ def get_connection(db_path: Path = DB_PATH):
     return conn
 
 
-def query_drug_nodes(conn: sqlite3.Connection, identifier: str) -> List[Dict[str, Any]]:
+def query_drug_nodes(conn: Any, identifier: str) -> List[Dict[str, Any]]:
     query = """
     SELECT id, chembl_id, name, drug_type, max_clinical_stage, trade_names, canonical_smiles
     FROM drugs
     WHERE id = ? OR chembl_id = ? OR name LIKE ?
     LIMIT 10
     """
-    rows = conn.execute(query, (identifier, identifier, f"%{identifier}%")).fetchall()
+    rows = execute_query(conn, query, (identifier, identifier, f"%{identifier}%")).fetchall()
     return [dict(r) for r in rows]
 
 
-def query_disease_nodes(conn: sqlite3.Connection, identifier: str) -> List[Dict[str, Any]]:
+def query_disease_nodes(conn: Any, identifier: str) -> List[Dict[str, Any]]:
     query = """
     SELECT id, source_id, name, description, therapeutic_areas, is_therapeutic_area
     FROM diseases
     WHERE id = ? OR source_id = ? OR name LIKE ?
     LIMIT 10
     """
-    rows = conn.execute(query, (identifier, identifier, f"%{identifier}%")).fetchall()
+    rows = execute_query(conn, query, (identifier, identifier, f"%{identifier}%")).fetchall()
     return [dict(r) for r in rows]
 
 
-def query_target_nodes(conn: sqlite3.Connection, identifier: str) -> List[Dict[str, Any]]:
+def query_target_nodes(conn: Any, identifier: str) -> List[Dict[str, Any]]:
     query = """
     SELECT id, ensembl_id, approved_symbol, approved_name, target_class, uniprot_ids
     FROM targets
     WHERE id = ? OR ensembl_id = ? OR approved_symbol = ? OR approved_symbol LIKE ?
     LIMIT 10
     """
-    rows = conn.execute(query, (identifier, identifier, identifier, f"%{identifier}%")).fetchall()
+    rows = execute_query(conn, query, (identifier, identifier, identifier, f"%{identifier}%")).fetchall()
     return [dict(r) for r in rows]
 
 
-def query_drug_targets(conn: sqlite3.Connection, drug_id: str) -> List[Dict[str, Any]]:
+def query_drug_targets(conn: Any, drug_id: str) -> List[Dict[str, Any]]:
     query = """
     SELECT 
         d.id as drug_id, d.name as drug_name, d.chembl_id,
@@ -62,11 +62,11 @@ def query_drug_targets(conn: sqlite3.Connection, drug_id: str) -> List[Dict[str,
     JOIN targets t ON dt.target_id = t.id
     WHERE dt.drug_id = ?
     """
-    rows = conn.execute(query, (drug_id,)).fetchall()
+    rows = execute_query(conn, query, (drug_id,)).fetchall()
     return [dict(r) for r in rows]
 
 
-def query_target_diseases(conn: sqlite3.Connection, target_id: str) -> List[Dict[str, Any]]:
+def query_target_diseases(conn: Any, target_id: str) -> List[Dict[str, Any]]:
     query = """
     SELECT 
         t.id as target_id, t.approved_symbol,
@@ -78,11 +78,11 @@ def query_target_diseases(conn: sqlite3.Connection, target_id: str) -> List[Dict
     WHERE td.target_id = ?
     ORDER BY td.score DESC
     """
-    rows = conn.execute(query, (target_id,)).fetchall()
+    rows = execute_query(conn, query, (target_id,)).fetchall()
     return [dict(r) for r in rows]
 
 
-def query_drug_indications(conn: sqlite3.Connection, drug_id: str) -> List[Dict[str, Any]]:
+def query_drug_indications(conn: Any, drug_id: str) -> List[Dict[str, Any]]:
     query = """
     SELECT 
         dd.drug_id, dd.disease_id, dis.name as disease_name,
@@ -91,11 +91,11 @@ def query_drug_indications(conn: sqlite3.Connection, drug_id: str) -> List[Dict[
     JOIN diseases dis ON dd.disease_id = dis.id
     WHERE dd.drug_id = ?
     """
-    rows = conn.execute(query, (drug_id,)).fetchall()
+    rows = execute_query(conn, query, (drug_id,)).fetchall()
     return [dict(r) for r in rows]
 
 
-def query_drug_warnings(conn: sqlite3.Connection, drug_id: str) -> List[Dict[str, Any]]:
+def query_drug_warnings(conn: Any, drug_id: str) -> List[Dict[str, Any]]:
     query = """
     SELECT 
         dw.drug_id, dw.warning_type, dw.toxicity_class, dw.country,
@@ -103,11 +103,11 @@ def query_drug_warnings(conn: sqlite3.Connection, drug_id: str) -> List[Dict[str
     FROM drug_warnings dw
     WHERE dw.drug_id = ?
     """
-    rows = conn.execute(query, (drug_id,)).fetchall()
+    rows = execute_query(conn, query, (drug_id,)).fetchall()
     return [dict(r) for r in rows]
 
 
-def query_clinical_trials_for_drug(conn: sqlite3.Connection, drug_id: str) -> List[Dict[str, Any]]:
+def query_clinical_trials_for_drug(conn: Any, drug_id: str) -> List[Dict[str, Any]]:
     query = """
     SELECT DISTINCT
         cr.id as trial_id, cr.source_name, cr.clinical_stage, cr.trial_phase,
@@ -117,11 +117,11 @@ def query_clinical_trials_for_drug(conn: sqlite3.Connection, drug_id: str) -> Li
     WHERE e.drug_id = ?
     LIMIT 20
     """
-    rows = conn.execute(query, (drug_id,)).fetchall()
+    rows = execute_query(conn, query, (drug_id,)).fetchall()
     return [dict(r) for r in rows]
 
 
-def query_evidence_records(conn: sqlite3.Connection, drug_id: Optional[str] = None, target_id: Optional[str] = None, disease_id: Optional[str] = None) -> List[Dict[str, Any]]:
+def query_evidence_records(conn: Any, drug_id: Optional[str] = None, target_id: Optional[str] = None, disease_id: Optional[str] = None) -> List[Dict[str, Any]]:
     query = """
     SELECT 
         id, drug_id, target_id, disease_id, evidence_type, clinical_stage,
@@ -142,12 +142,12 @@ def query_evidence_records(conn: sqlite3.Connection, drug_id: Optional[str] = No
         params.append(disease_id)
 
     query += " ORDER BY score DESC LIMIT 50"
-    rows = conn.execute(query, params).fetchall()
+    rows = execute_query(conn, query, params).fetchall()
     return [dict(r) for r in rows]
 
 
 def query_repurposing_candidate_paths(
-    conn: sqlite3.Connection,
+    conn: Any,
     drug_name: Optional[str] = None,
     disease_name: Optional[str] = None,
     min_score: float = 0.2,
@@ -178,15 +178,25 @@ def query_repurposing_candidate_paths(
     params = [min_score]
 
     if drug_name:
-        query += " AND (d.name LIKE ? OR d.id = ? OR d.chembl_id = ?)"
-        params.extend([f"%{drug_name}%", drug_name, drug_name])
+        clean_chembl = drug_name.replace("DR:", "")
+        if drug_name.startswith("DR:") or drug_name.startswith("CHEMBL"):
+            query += " AND (d.id = ? OR d.chembl_id = ?)"
+            params.extend([drug_name if drug_name.startswith("DR:") else f"DR:{drug_name}", clean_chembl])
+        else:
+            query += " AND (d.name LIKE ? OR d.id = ? OR d.chembl_id = ?)"
+            params.extend([f"%{drug_name}%", drug_name, clean_chembl])
 
     if disease_name:
-        query += " AND (dis.name LIKE ? OR dis.id = ? OR dis.source_id = ?)"
-        params.extend([f"%{disease_name}%", disease_name, disease_name])
+        clean_src = disease_name.replace("D:", "")
+        if disease_name.startswith("D:") or disease_name.startswith("MONDO_") or disease_name.startswith("EFO_"):
+            query += " AND (dis.id = ? OR dis.source_id = ?)"
+            params.extend([disease_name if disease_name.startswith("D:") else f"D:{disease_name}", clean_src])
+        else:
+            query += " AND (dis.name LIKE ? OR dis.id = ? OR dis.source_id = ?)"
+            params.extend([f"%{disease_name}%", disease_name, clean_src])
 
     query += " ORDER BY td.score DESC LIMIT ?"
     params.append(limit * 10)
 
-    rows = conn.execute(query, params).fetchall()
+    rows = execute_query(conn, query, params).fetchall()
     return [dict(r) for r in rows]

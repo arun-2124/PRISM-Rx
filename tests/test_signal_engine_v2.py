@@ -23,7 +23,9 @@ class TestSignalEngineV2(unittest.TestCase):
         for sig in signals:
             d_id = sig["drug"]["id"]
             dis_id = sig["disease"]["id"]
-            ind = conn.execute(
+            from src.database.connection import execute_query
+            ind = execute_query(
+                conn,
                 "SELECT 1 FROM drug_disease WHERE drug_id = ? AND disease_id = ?",
                 (d_id, dis_id)
             ).fetchone()
