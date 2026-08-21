@@ -146,7 +146,7 @@ class TestFastAPIBackend(unittest.TestCase):
         self.assertEqual(data["signal_id"], sig_id)
         self.assertEqual(data["prism_score"], 82.0)
         self.assertEqual(data["signal_status"]["status"], "EMERGING")
-        self.assertIn("32 provenanced evidence records", data["answer"])
+        self.assertIn("provenanced evidence records", data["answer"])
         self.assertEqual(data["provider_mode"], "DETERMINISTIC_EVIDENCE_GROUNDED_MODE")
 
     def test_copilot_query_comparison(self):

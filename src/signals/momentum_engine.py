@@ -30,7 +30,7 @@ class MomentumEngine:
 
         # 2. Fetch evidence events
         events = list(execute_query(self.conn, """
-            SELECT event_type, created_at
+            SELECT event_type, detected_at
             FROM evidence_events
             WHERE (drug_id = ? OR drug_id = ?)
         """, (drug_id, clean_drug_id)).fetchall())

@@ -78,12 +78,12 @@ class LatentSignalDetector:
         source_count = max(1, len(sources))
         source_diversity_score = min(10.0, source_count * 3.33)
 
-        # 6. Recent Evidence Activity (0-10 pts)
-        recent_events = list(execute_query(self.conn, """
+        recent_row = execute_query(self.conn, """
             SELECT COUNT(*) FROM evidence_events
             WHERE (drug_id = ? OR drug_id = ?)
-        """, (drug_id, clean_drug_id)).fetchone())
-        recent_count = list(recent_events.values())[0] if isinstance(recent_events, dict) else recent_events[0]
+        """, (drug_id, clean_drug_id)).fetchone()
+        raw_val = list(recent_row.values())[0] if isinstance(recent_row, dict) else recent_row[0] if recent_row else 0
+        recent_count = int(raw_val or 0)
         recent_activity_score = min(10.0, recent_count * 5.0 + (3.0 if evidence_count > 0 else 0.0))
 
         # Calculate Total Normalized Latent Signal Score (0-100)
