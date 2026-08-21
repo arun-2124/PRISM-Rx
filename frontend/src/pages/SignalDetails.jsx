@@ -27,6 +27,9 @@ export default function SignalDetails() {
   const [liveLoading, setLiveLoading] = useState(false);
   const [liveError, setLiveError] = useState(null);
 
+  // Saved portfolio status
+  const [saved, setSaved] = useState(false);
+
   useEffect(() => {
     setLoading(true);
     setError(null);
@@ -67,6 +70,13 @@ export default function SignalDetails() {
       });
   }, [id]);
 
+  useEffect(() => {
+    const targetId = signal?.signal_id || id;
+    if (targetId) {
+      setSaved(isSignalSaved(targetId));
+    }
+  }, [signal?.signal_id, id]);
+
   const handleFetchLiveLit = () => {
     if (!signal) return;
     setLiveLoading(true);
@@ -90,6 +100,12 @@ export default function SignalDetails() {
         if (res) setGraphData(res);
       })
       .catch(err => console.error('Neighborhood expansion error:', err));
+  };
+
+  const handleToggleBookmark = () => {
+    const targetId = signal?.signal_id || id;
+    const newStatus = toggleSaveSignal(targetId);
+    setSaved(newStatus);
   };
 
   if (loading) {
@@ -124,20 +140,6 @@ export default function SignalDetails() {
   const category = signal?.category || 'RESEARCH_SIGNAL';
   const scoreComps = signal?.score_components || {};
   const evidence = signal?.evidence || {};
-
-  const [saved, setSaved] = useState(false);
-
-  useEffect(() => {
-    if (signal?.signal_id || id) {
-      setSaved(isSignalSaved(signal?.signal_id || id));
-    }
-  }, [signal?.signal_id, id]);
-
-  const handleToggleBookmark = () => {
-    const targetId = signal?.signal_id || id;
-    const newStatus = toggleSaveSignal(targetId);
-    setSaved(newStatus);
-  };
 
   return (
     <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '32px 24px' }}>
