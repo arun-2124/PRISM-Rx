@@ -13,6 +13,7 @@ import { getSavedSignalIds } from './utils/savedSignals';
 
 // Pages
 import Dashboard from './pages/Dashboard';
+import ErrorBoundary from './components/ErrorBoundary';
 import Explorer from './pages/Explorer';
 import SignalDetails from './pages/SignalDetails';
 import OpportunityRadarPage from './pages/OpportunityRadarPage';
@@ -57,7 +58,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/signals" element={<Explorer />} />
-            <Route path="/signals/:id" element={<SignalDetails />} />
+            <Route path="/signals/:id" element={<ErrorBoundary><SignalDetails /></ErrorBoundary>} />
             <Route path="/radar" element={<OpportunityRadarPage />} />
             <Route path="/signal-intelligence" element={<SignalIntelligencePage />} />
             <Route path="/graph-explorer" element={<EvidenceGraphPage />} />

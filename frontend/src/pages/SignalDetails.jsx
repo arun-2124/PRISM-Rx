@@ -110,21 +110,24 @@ export default function SignalDetails() {
     );
   }
 
-  const drug = signal.drug;
-  const disease = signal.disease;
-  const score = signal.research_priority_score;
-  const category = signal.category;
-  const scoreComps = signal.score_components || {};
-  const evidence = signal.evidence || {};
+  const drug = signal?.drug || { name: 'Candidate Drug', id: 'DR:N/A' };
+  const disease = signal?.disease || { name: 'Target Disease', id: 'D:N/A' };
+  const score = signal?.research_priority_score || 0;
+  const category = signal?.category || 'RESEARCH_SIGNAL';
+  const scoreComps = signal?.score_components || {};
+  const evidence = signal?.evidence || {};
 
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    setSaved(isSignalSaved(signal.signal_id));
-  }, [signal.signal_id]);
+    if (signal?.signal_id || id) {
+      setSaved(isSignalSaved(signal?.signal_id || id));
+    }
+  }, [signal?.signal_id, id]);
 
   const handleToggleBookmark = () => {
-    const newStatus = toggleSaveSignal(signal.signal_id);
+    const targetId = signal?.signal_id || id;
+    const newStatus = toggleSaveSignal(targetId);
     setSaved(newStatus);
   };
 
@@ -343,9 +346,9 @@ export default function SignalDetails() {
 
           <h4 style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '8px' }}>Primary Biological Target Paths:</h4>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {signal.supporting_paths?.map((p, idx) => (
+            {signal?.supporting_paths?.map((p, idx) => (
               <div key={idx} style={{ background: 'rgba(0, 242, 254, 0.05)', padding: '10px 14px', borderRadius: '6px', border: '1px solid rgba(0, 242, 254, 0.15)', fontSize: '0.85rem', fontFamily: 'var(--font-mono)' }}>
-                <strong>{drug.name}</strong> &ndash;[{p.action_type || 'INHIBITOR'}]&rarr; <strong style={{ color: 'var(--accent-emerald)' }}>{p.target.symbol} ({p.target.name})</strong> &ndash;(score: {p.target_disease_score})&rarr; <strong>{disease.name}</strong>
+                <strong>{drug.name}</strong> &ndash;[{p?.action_type || 'INHIBITOR'}]&rarr; <strong style={{ color: 'var(--accent-emerald)' }}>{p?.target?.symbol || 'TARGET'} ({p?.target?.name || ''})</strong> &ndash;(score: {p?.target_disease_score || '1.0'})&rarr; <strong>{disease.name}</strong>
               </div>
             ))}
           </div>
