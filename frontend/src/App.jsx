@@ -16,6 +16,7 @@ import Dashboard from './pages/Dashboard';
 import Explorer from './pages/Explorer';
 import SignalDetails from './pages/SignalDetails';
 import OpportunityRadarPage from './pages/OpportunityRadarPage';
+import SignalIntelligencePage from './pages/SignalIntelligencePage';
 import EvidenceGraphPage from './pages/EvidenceGraphPage';
 import DrugIntelligencePage from './pages/DrugIntelligencePage';
 import DiseaseIntelligencePage from './pages/DiseaseIntelligencePage';
@@ -58,6 +59,7 @@ export default function App() {
             <Route path="/signals" element={<Explorer />} />
             <Route path="/signals/:id" element={<SignalDetails />} />
             <Route path="/radar" element={<OpportunityRadarPage />} />
+            <Route path="/signal-intelligence" element={<SignalIntelligencePage />} />
             <Route path="/graph-explorer" element={<EvidenceGraphPage />} />
             <Route path="/drugs-intel" element={<DrugIntelligencePage />} />
             <Route path="/diseases-intel" element={<DiseaseIntelligencePage />} />

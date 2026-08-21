@@ -136,3 +136,28 @@ export async function fetchLiveEuropePMC(drugName, diseaseName) {
     throw err;
   }
 }
+
+export async function fetchEmergingSignals(params = {}) {
+  const query = new URLSearchParams();
+  Object.keys(params).forEach(key => {
+    if (params[key] !== undefined && params[key] !== null && params[key] !== '') {
+      query.append(key, params[key]);
+    }
+  });
+
+  const res = await fetch(`${API_BASE}/signal-intelligence/emerging?${query.toString()}`);
+  if (!res.ok) throw new Error('Failed to fetch emerging signal intelligence');
+  return res.json();
+}
+
+export async function fetchLatentSignals(limit = 20) {
+  const res = await fetch(`${API_BASE}/signal-intelligence/latent?limit=${limit}`);
+  if (!res.ok) throw new Error('Failed to fetch latent signals');
+  return res.json();
+}
+
+export async function fetchSignalIntelligenceDetail(id) {
+  const res = await fetch(`${API_BASE}/signal-intelligence/${encodeURIComponent(id)}`);
+  if (!res.ok) throw new Error('Failed to fetch signal intelligence detail');
+  return res.json();
+}

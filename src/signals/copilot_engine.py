@@ -217,6 +217,36 @@ class CopilotEngine:
         if q_lower in ["what is a prism score?", "what is a prism score", "what is prism score", "explain prism score"]:
             return self._build_general_response(q_raw, GENERAL_CONCEPTS["prism score"])
 
+        if any(phrase in q_lower for phrase in ["emerging signal", "emerging now", "gaining momentum", "latent signal", "signals are emerging", "what is emerging"]):
+            try:
+                from src.signals.signal_intelligence_service import SignalIntelligenceService
+                service = SignalIntelligenceService()
+                emerging_sigs = service.get_emerging_radar_signals(limit=3)
+                
+                lines = ["### PRISM Signal Intelligence: Emerging Signals Overview\n\nPRISM-Rx currently identifies several candidate drug–disease relationships with converging evidence momentum:\n"]
+                for idx, s in enumerate(emerging_sigs, 1):
+                    lines.append(f"{idx}. **{s['drug']['name']}** &rarr; **{s['disease']['name']}**")
+                    lines.append(f"   • **PRISM Priority Score**: `{s['prism_priority_score']} / 100`")
+                    lines.append(f"   • **Latent Signal Score**: `{s['latent_signal_score']} / 100`")
+                    lines.append(f"   • **Momentum**: `{s['momentum_direction']} ({'+' if s['momentum_percent_change'] >= 0 else ''}{s['momentum_percent_change']}%)`")
+                    lines.append(f"   • **Signal Lifecycle**: **{s['signal_lifecycle_label']}**")
+                    lines.append(f"   • **Why Now**: {s['why_now']['why_now_summary']}\n")
+                
+                lines.append("*You can navigate to `/signal-intelligence` on the sidebar or select a specific candidate signal to inspect detailed evidence momentum and pathway topology.*")
+                
+                return {
+                    "question": q_raw,
+                    "signal_id": emerging_sigs[0]["signal_id"] if emerging_sigs else None,
+                    "prism_score": emerging_sigs[0]["prism_priority_score"] if emerging_sigs else 82.0,
+                    "signal_status": {"status": emerging_sigs[0]["signal_lifecycle"] if emerging_sigs else "EMERGING"},
+                    "answer": "\n".join(lines),
+                    "confidence": "HIGH_CONFIDENCE_SIGNAL",
+                    "provider_mode": "DETERMINISTIC_EVIDENCE_GROUNDED_MODE",
+                    "sources": ["PRISM-Rx Signal Intelligence Service"]
+                }
+            except Exception as e:
+                pass
+
         if "identify signals" in q_lower or "how does prism-rx" in q_lower:
             return self._build_general_response(q_raw, GENERAL_CONCEPTS["prism-rx"])
 

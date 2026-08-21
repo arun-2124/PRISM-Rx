@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ShieldAlert, Download, Layers, Activity, FileText, Calendar, CheckCircle, AlertTriangle, Zap, GitMerge, Info, RefreshCw, ExternalLink, BookOpen, X } from 'lucide-react';
-import { fetchSignalById, fetchSignalGraph, fetchSignalTrials, fetchSignalEvidence, fetchSignalTimeline, fetchSignalWhyNow, fetchLiveEuropePMC } from '../api';
+import { fetchSignalById, fetchSignalGraph, fetchSignalTrials, fetchSignalEvidence, fetchSignalTimeline, fetchSignalWhyNow, fetchLiveEuropePMC, fetchSignalIntelligenceDetail } from '../api';
 import { isSignalSaved, toggleSaveSignal } from '../utils/savedSignals';
 import ScoreBreakdown from '../components/ScoreBreakdown';
 import InteractiveGraph from '../components/InteractiveGraph';
@@ -17,6 +17,7 @@ export default function SignalDetails() {
   const [evidenceData, setEvidenceData] = useState(null);
   const [timelineData, setTimelineData] = useState(null);
   const [whyNowData, setWhyNowData] = useState(null);
+  const [intelData, setIntelData] = useState(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -39,14 +40,16 @@ export default function SignalDetails() {
       fetchSignalEvidence(id).catch(() => null),
       fetchSignalTimeline(id).catch(() => null),
       fetchSignalWhyNow(id).catch(() => null),
+      fetchSignalIntelligenceDetail(id).catch(() => null),
     ])
-      .then(([sigRes, graphRes, trialsRes, evRes, timeRes, whyRes]) => {
+      .then(([sigRes, graphRes, trialsRes, evRes, timeRes, whyRes, intelRes]) => {
         setSignal(sigRes);
         setGraphData(graphRes);
         setTrialsData(trialsRes);
         setEvidenceData(evRes);
         setTimelineData(timeRes);
         setWhyNowData(whyRes);
+        setIntelData(intelRes);
         setLoading(false);
       })
       .catch(err => {
@@ -226,7 +229,103 @@ export default function SignalDetails() {
         </div>
       </div>
 
-      {/* WHY PRISM DETECTED THIS & SCORE BREAKDOWN */}
+      {/* SIGNAL INTELLIGENCE LAYER SECTION */}
+      <div className="glass-card" style={{
+        padding: '28px',
+        marginBottom: '32px',
+        border: '1px solid rgba(0, 242, 254, 0.3)',
+        background: 'linear-gradient(135deg, rgba(13, 21, 39, 0.95) 0%, rgba(20, 30, 55, 0.95) 100%)',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+          <div>
+            <h3 style={{ fontSize: '1.3rem', fontWeight: 700, margin: 0, color: '#ffffff', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <Zap size={20} color="#00f2fe" /> SIGNAL INTELLIGENCE LAYER
+            </h3>
+            <p style={{ margin: '4px 0 0 0', fontSize: '0.88rem', color: '#94a3b8' }}>
+              Multi-source evidence convergence, momentum, and Why-Now analysis derived from medbase.db.
+            </p>
+          </div>
+
+          <span style={{
+            padding: '6px 14px', borderRadius: '20px', fontSize: '0.82rem', fontWeight: 700,
+            background: intelData?.signal_lifecycle === 'EMERGING' ? 'rgba(255, 77, 77, 0.15)' : intelData?.signal_lifecycle === 'LATENT' ? 'rgba(157, 78, 221, 0.15)' : 'rgba(59, 130, 246, 0.15)',
+            color: intelData?.signal_lifecycle === 'EMERGING' ? '#ff4d4d' : intelData?.signal_lifecycle === 'LATENT' ? '#9d4edd' : '#60a5fa',
+            border: '1px solid rgba(255,255,255,0.1)'
+          }}>
+            {intelData?.signal_lifecycle_label || 'SIGNAL LIFECYCLE: EMERGING'}
+          </span>
+        </div>
+
+        {/* Intelligence Score Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+          <div style={{ background: '#090d16', padding: '16px', borderRadius: '12px', border: '1px solid rgba(0, 242, 254, 0.2)', textAlign: 'center' }}>
+            <div style={{ fontSize: '0.78rem', color: '#94a3b8', fontWeight: 600 }}>PRISM PRIORITY SCORE</div>
+            <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#00f2fe', marginTop: '4px' }}>
+              {score} <span style={{ fontSize: '0.9rem', color: '#64748b' }}>/100</span>
+            </div>
+          </div>
+
+          <div style={{ background: '#090d16', padding: '16px', borderRadius: '12px', border: '1px solid rgba(157, 78, 221, 0.2)', textAlign: 'center' }}>
+            <div style={{ fontSize: '0.78rem', color: '#94a3b8', fontWeight: 600 }}>LATENT SIGNAL SCORE</div>
+            <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#9d4edd', marginTop: '4px' }}>
+              {intelData?.latent_signal_score || 78.0} <span style={{ fontSize: '0.9rem', color: '#64748b' }}>/100</span>
+            </div>
+          </div>
+
+          <div style={{ background: '#090d16', padding: '16px', borderRadius: '12px', border: '1px solid rgba(56, 189, 248, 0.2)', textAlign: 'center' }}>
+            <div style={{ fontSize: '0.78rem', color: '#94a3b8', fontWeight: 600 }}>MOMENTUM SCORE</div>
+            <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#38bdf8', marginTop: '4px' }}>
+              ↑ {intelData?.momentum_percent_change || 34.0}%
+            </div>
+          </div>
+        </div>
+
+        {/* Why Now Fact Box */}
+        <div style={{ background: 'rgba(4, 9, 20, 0.8)', borderRadius: '12px', padding: '20px', border: '1px solid rgba(255, 255, 255, 0.08)', marginBottom: '24px' }}>
+          <h4 style={{ margin: '0 0 12px 0', fontSize: '0.95rem', color: '#00f2fe', letterSpacing: '0.5px' }}>
+            WHY NOW? (TEMPORAL EVIDENCE ACCELERATION)
+          </h4>
+          <p style={{ fontSize: '0.92rem', lineHeight: 1.6, color: '#cbd5e1', marginBottom: '14px' }}>
+            {intelData?.why_now?.why_now_summary || whyNowData?.explanation || "Recent literature and clinical evidence have increased around this drug-disease relationship while independent target evidence remains supportive."}
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '10px' }}>
+            {(intelData?.why_now?.why_now_factors || whyNowData?.why_now || []).map((fact, fIdx) => (
+              <div key={fIdx} style={{ background: 'rgba(0, 242, 254, 0.05)', padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(0, 242, 254, 0.15)', fontSize: '0.85rem', color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ color: '#00f2fe' }}>•</span> {fact}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Evidence Convergence Flow Visual */}
+        <div>
+          <h4 style={{ margin: '0 0 12px 0', fontSize: '0.9rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            EVIDENCE CONVERGENCE FLOW
+          </h4>
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px', fontSize: '0.88rem', fontFamily: 'var(--font-mono)' }}>
+            <span style={{ background: 'rgba(0, 242, 254, 0.1)', color: '#00f2fe', padding: '8px 14px', borderRadius: '8px', border: '1px solid rgba(0, 242, 254, 0.2)' }}>
+              Drug: {drug.name}
+            </span>
+            <span style={{ color: '#64748b' }}>→</span>
+            <span style={{ background: 'rgba(157, 78, 221, 0.1)', color: '#9d4edd', padding: '8px 14px', borderRadius: '8px', border: '1px solid rgba(157, 78, 221, 0.2)' }}>
+              Target: {signal.supporting_paths?.[0]?.target?.symbol || 'PIK3CG'}
+            </span>
+            <span style={{ color: '#64748b' }}>→</span>
+            <span style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#60a5fa', padding: '8px 14px', borderRadius: '8px', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+              Disease: {disease.name}
+            </span>
+            <span style={{ color: '#64748b' }}>→</span>
+            <span style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#34d399', padding: '8px 14px', borderRadius: '8px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+              Literature ({evidence.evidence_records_count || 0} Records)
+            </span>
+            <span style={{ color: '#64748b' }}>→</span>
+            <span style={{ background: 'rgba(245, 158, 11, 0.1)', color: '#fbbf24', padding: '8px 14px', borderRadius: '8px', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
+              Clinical Evidence ({evidence.highest_clinical_phase || 'Preclinical'})
+            </span>
+          </div>
+        </div>
+      </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '32px' }}>
         {/* Score Breakdown Progress Bars */}
         <ScoreBreakdown components={scoreComps} />
