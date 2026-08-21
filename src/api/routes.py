@@ -863,7 +863,7 @@ def get_signal_why_now(signal_id: str):
         dated_trials_cnt = list(dict(execute_query(conn, """
             SELECT COUNT(*) FROM evidence e
             JOIN clinical_reports cr ON e.clinical_report_id = cr.id
-            WHERE e.drug_id = ? AND cr.trial_start_date IS NOT NULL AND cr.trial_start_date != ''
+            WHERE e.drug_id = ? AND cr.trial_start_date IS NOT NULL
         """, (drug_id,)).fetchone()).values())[0]
 
         dated_events_total = recent_pub_cnt + dated_trials_cnt
