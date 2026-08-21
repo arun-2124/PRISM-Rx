@@ -2,6 +2,7 @@
 FastAPI REST API Routes for PRISM-Rx User-Facing Application
 """
 
+import os
 import json
 import csv
 import io
